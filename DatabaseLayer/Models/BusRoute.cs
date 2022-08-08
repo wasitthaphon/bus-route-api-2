@@ -19,12 +19,12 @@ namespace BusRouteApi.DatabaseLayer.Models
         public virtual Shift Shift { get; set; } = null!;
         public virtual Vendor Vendor { get; set; } = null!;
 
-        public BusRoute(DateOnly dateOnly, int busId, int shiftId, int ruotePriceId, int oilPriceId, int vendorId)
+        public BusRoute(DateOnly busRouteDate, int busId, int shiftId, int routePriceId, int oilPriceId, int vendorId)
         {
-            BusRouteDate = dateOnly;
+            BusRouteDate = busRouteDate;
             BusId = busId;
             ShiftId = shiftId;
-            RoutePriceId = ruotePriceId;
+            RoutePriceId = routePriceId;
             OilPriceId = oilPriceId;
             VendorId = vendorId;
         }

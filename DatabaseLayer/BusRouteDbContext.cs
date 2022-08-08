@@ -3,26 +3,28 @@ using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using BusRouteApi.DatabaseLayer.Models;
-using BusRouteApi.Misc;
 
 namespace BusRouteApi.DatabaseLayer
 {
     public partial class BusRouteDbContext : DbContext
     {
-        public BusRouteDbContext()
+        private readonly IConfiguration _configuration;
+        public BusRouteDbContext(IConfiguration configuration)
         {
+            _configuration = configuration;
         }
 
-        public BusRouteDbContext(DbContextOptions<BusRouteDbContext> options)
+        public BusRouteDbContext(DbContextOptions<BusRouteDbContext> options, IConfiguration configuration)
             : base(options)
         {
+            _configuration = configuration;
         }
 
         public virtual DbSet<Bus> Buses { get; set; } = null!;
         public virtual DbSet<BusRoute> BusRoutes { get; set; } = null!;
         public virtual DbSet<OilPrice> OilPrices { get; set; } = null!;
         public virtual DbSet<Payee> Payees { get; set; } = null!;
-        public virtual DbSet<Models.Route> Routes { get; set; } = null!;
+        public virtual DbSet<DatabaseLayer.Models.Route> Routes { get; set; } = null!;
         public virtual DbSet<RoutePrice> RoutePrices { get; set; } = null!;
         public virtual DbSet<Shift> Shifts { get; set; } = null!;
         public virtual DbSet<User> Users { get; set; } = null!;
@@ -33,14 +35,14 @@ namespace BusRouteApi.DatabaseLayer
         {
             if (!optionsBuilder.IsConfigured)
             {
-                optionsBuilder.UseNpgsql("Host=localhost:5432;Database=bus-route-db;Username=postgres;Password=");
+                optionsBuilder.UseNpgsql(_configuration.GetSection("AppSettings:Database").Value);
             }
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.HasPostgresEnum<Role>()
-                .HasPostgresEnum<RouteType>();
+            modelBuilder.HasPostgresEnum("Role", new[] { "Manager", "CarCenter", "Clerk", "Admin", "Guest" })
+                .HasPostgresEnum("RouteType", new[] { "General", "Special" });
 
             modelBuilder.Entity<Bus>(entity =>
             {
@@ -110,13 +112,15 @@ namespace BusRouteApi.DatabaseLayer
                 entity.Property(e => e.Name).HasMaxLength(100);
             });
 
-            modelBuilder.Entity<Models.Route>(entity =>
+            modelBuilder.Entity<DatabaseLayer.Models.Route>(entity =>
             {
                 entity.ToTable("Route");
 
                 entity.Property(e => e.Id).UseIdentityAlwaysColumn();
 
                 entity.Property(e => e.Name).HasMaxLength(50);
+
+                entity.Property(e => e.RouteType).HasMaxLength(15);
             });
 
             modelBuilder.Entity<RoutePrice>(entity =>
@@ -149,7 +153,9 @@ namespace BusRouteApi.DatabaseLayer
 
                 entity.Property(e => e.Name).HasMaxLength(70);
 
-                entity.Property(e => e.Passsword).HasMaxLength(600);
+                entity.Property(e => e.Password).HasMaxLength(200);
+
+                entity.Property(e => e.Role).HasMaxLength(15);
 
                 entity.Property(e => e.Username).HasMaxLength(50);
             });
