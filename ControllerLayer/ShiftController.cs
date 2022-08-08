@@ -7,28 +7,29 @@ using Microsoft.AspNetCore.Mvc;
 namespace BusRouteApi.ControllerLayer
 {
     [ApiController]
-    [Route("api/payees")]
-    public class PayeeController : ControllerBase
+    [Route("api/shifts")]
+    public class ShiftController : ControllerBase
     {
-        private readonly PayeeService _payeeService;
-
-        public PayeeController(PayeeService payeeService)
+        public ShiftService _shiftService;
+        public ShiftController(ShiftService shiftService)
         {
-            _payeeService = payeeService;
+            _shiftService = shiftService;
         }
 
+
         [HttpGet("suggestions")]
-        public async Task<IActionResult> GetPayees([FromQuery] PayeeQuery query)
+        public async Task<IActionResult> GetShifts([FromQuery] ShiftQuery query)
         {
             try
             {
-                Queue<PayeeBody> payeeBodies = new Queue<PayeeBody>();
-                await foreach (PayeeBody payeeBody in _payeeService.GetPayees(query.Term))
+                Queue<ShiftBody> shifts = new Queue<ShiftBody>();
+
+                await foreach (ShiftBody shift in _shiftService.GetShifts(query.Term))
                 {
-                    payeeBodies.Enqueue(payeeBody);
+                    shifts.Enqueue(shift);
                 }
 
-                return StatusCode((int)HttpStatusCode.OK, payeeBodies);
+                return StatusCode((int)HttpStatusCode.OK, shifts);
             }
             catch (Exception e)
             {
@@ -37,19 +38,18 @@ namespace BusRouteApi.ControllerLayer
         }
 
         [HttpGet("all")]
-        public async Task<IActionResult> GetAllPayees()
+        public async Task<IActionResult> GetAllShifts()
         {
             try
             {
+                Queue<ShiftBody> shiftBodies = new Queue<ShiftBody>();
 
-                Queue<PayeeBody> payeeBodies = new Queue<PayeeBody>();
-
-                await foreach (PayeeBody payeeBody in _payeeService.GetAllPayees())
+                await foreach (ShiftBody shiftBody in _shiftService.GetAllShifts())
                 {
-                    payeeBodies.Enqueue(payeeBody);
+                    shiftBodies.Enqueue(shiftBody);
                 }
 
-                return StatusCode((int)HttpStatusCode.OK, payeeBodies);
+                return StatusCode((int)HttpStatusCode.OK, shiftBodies);
             }
             catch (Exception e)
             {
@@ -58,22 +58,21 @@ namespace BusRouteApi.ControllerLayer
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetPayee(int id)
+        public async Task<IActionResult> GetShift(int id)
         {
             try
             {
-                PayeeBody payee;
                 Exception e;
+                ShiftBody shiftBody;
 
-                (payee, e) = await _payeeService.GetPayee(id);
+                (shiftBody, e) = await _shiftService.GetShift(id);
 
                 if (e != null)
                 {
-                    return StatusCode((int)HttpStatusCode.NotFound, new { message = e.Message });
+                    return StatusCode((int)HttpStatusCode.BadRequest, new { message = e.Message });
                 }
 
-                return StatusCode((int)HttpStatusCode.OK, payee);
-
+                return StatusCode((int)HttpStatusCode.OK, shiftBody);
             }
             catch (Exception e)
             {
@@ -81,22 +80,21 @@ namespace BusRouteApi.ControllerLayer
             }
         }
 
-
         [HttpPost]
-        public async Task<IActionResult> CreatePayee([FromBody] PayeeBody body)
+        public async Task<IActionResult> CreateNewShift([FromBody] ShiftBody body)
         {
             try
             {
+
                 bool result;
                 Exception e;
 
-                (result, e) = await _payeeService.CreatePayee(body);
+                (result, e) = await _shiftService.CreateShift(body);
 
                 if (e != null)
                 {
                     return StatusCode((int)HttpStatusCode.BadRequest, new { message = e.Message });
                 }
-
 
                 return StatusCode((int)HttpStatusCode.Created);
             }
@@ -107,14 +105,14 @@ namespace BusRouteApi.ControllerLayer
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdatePayee([FromBody] PayeeBody body)
+        public async Task<IActionResult> UpdateShift([FromBody] ShiftBody body)
         {
             try
             {
                 bool result;
                 Exception e;
 
-                (result, e) = await _payeeService.UpdatePayee(body);
+                (result, e) = await _shiftService.UpdateShift(body);
 
                 if (e != null)
                 {
@@ -130,26 +128,27 @@ namespace BusRouteApi.ControllerLayer
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeletePayee(int id)
+        public async Task<IActionResult> DeleteShift(int id)
         {
             try
             {
                 bool result;
                 Exception e;
-                (result, e) = await _payeeService.DeletePayee(id);
+
+                (result, e) = await _shiftService.DeleteShift(id);
 
                 if (e != null)
                 {
-                    return StatusCode((int)HttpStatusCode.BadRequest, new { message = e.Message });
+                    return StatusCode((int)HttpStatusCode.InternalServerError, new { message = e.Message });
                 }
 
                 return StatusCode((int)HttpStatusCode.NoContent);
+
             }
             catch (Exception e)
             {
                 return StatusCode((int)HttpStatusCode.InternalServerError, new { message = e.Message });
             }
         }
-
     }
 }

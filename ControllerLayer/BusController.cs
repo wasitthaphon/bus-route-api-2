@@ -21,7 +21,7 @@ namespace BusRouteApi.ControllerLayer
         {
             try
             {
-                Bus bus;
+                BusBody bus;
                 Exception exception;
                 (bus, exception) = await _busService.GetBus(busNumber);
 
@@ -44,10 +44,30 @@ namespace BusRouteApi.ControllerLayer
         {
             try
             {
-                Queue<Bus> buses = new Queue<Bus>();
+                Queue<BusBody> buses = new Queue<BusBody>();
 
 
-                await foreach (Bus bus in _busService.GetBusesByTerm(query.Term))
+                await foreach (BusBody bus in _busService.GetBusesByTerm(query.Term))
+                {
+                    buses.Enqueue(bus);
+                }
+
+                return StatusCode((int)HttpStatusCode.OK, buses);
+            }
+            catch (Exception e)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError, new { message = e.Message });
+            }
+        }
+
+        [HttpGet("all")]
+        public async Task<IActionResult> GetAllBuses()
+        {
+            try
+            {
+                Queue<BusBody> buses = new Queue<BusBody>();
+
+                await foreach (BusBody bus in _busService.GetAllBuses())
                 {
                     buses.Enqueue(bus);
                 }
