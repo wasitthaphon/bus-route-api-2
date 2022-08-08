@@ -44,6 +44,32 @@ namespace BusRouteApi.ServiceLayer
             }
         }
 
+        public async Task<(VendorBody, Exception)> GetFirstVendor()
+        {
+            try
+            {
+                VendorBody vendorBody;
+                Vendor vendor;
+
+                vendor = await _vendorRepository.GetDefaultVendor();
+
+                if (vendor == null)
+                {
+                    return (null, new Exception("Vendor does not exist"));
+                }
+
+                vendorBody = new VendorBody();
+                vendorBody.Id = vendor.Id;
+                vendorBody.Name = vendor.Name;
+
+                return (vendorBody, null);
+            }
+            catch (Exception e)
+            {
+                return (null, e);
+            }
+        }
+
         public async Task<(bool, Exception)> UpdateVendor(VendorBody body)
         {
             try

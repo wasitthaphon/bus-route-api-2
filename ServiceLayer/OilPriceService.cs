@@ -1,4 +1,5 @@
 using BusRouteApi.DatabaseLayer.Models;
+using BusRouteApi.Helpers;
 using BusRouteApi.RepositoryLayer;
 using BusRouteApi.RequestModels;
 
@@ -19,7 +20,12 @@ namespace BusRouteApi.ServiceLayer
             try
             {
                 bool result;
-                OilPrice oilPrice = new OilPrice(body.Date, body.Price);
+                DateOnly dateOnly;
+                Exception e;
+
+                (dateOnly, e) = DateTimeParser.ParserDateFromString(body.OilPriceDate);
+
+                OilPrice oilPrice = new OilPrice(dateOnly, body.Price);
 
                 result = await _oilPriceRepository.CreateOilPrice(oilPrice);
 
@@ -42,21 +48,26 @@ namespace BusRouteApi.ServiceLayer
             {
                 bool result;
                 OilPrice oilPrice = await _oilPriceRepository.GetOilPrice(body.Id);
+                DateOnly dateOnly;
+                Exception e;
+
+                (dateOnly, e) = DateTimeParser.ParserDateFromString(body.OilPriceDate);
+
                 if (oilPrice == null)
                 {
                     return (false, new Exception("Oil price not found"));
                 }
 
-                if (oilPrice.OilPriceDate != body.Date)
+                if (oilPrice.OilPriceDate != dateOnly)
                 {
-                    OilPrice oilPriceNewDate = await _oilPriceRepository.GetOilPrice(body.Date);
+                    OilPrice oilPriceNewDate = await _oilPriceRepository.GetOilPrice(dateOnly);
                     if (oilPriceNewDate != null)
                     {
                         return (false, new Exception("The date of oil price already created."));
                     }
                 }
 
-                oilPrice.OilPriceDate = body.Date;
+                oilPrice.OilPriceDate = dateOnly;
                 oilPrice.Price = body.Price;
 
                 result = await _oilPriceRepository.UpdateOilPrice(oilPrice);
@@ -75,12 +86,19 @@ namespace BusRouteApi.ServiceLayer
             }
         }
 
-        public async Task<(OilPriceBody, Exception)> GetOilPrice(DateOnly date)
+        public async Task<(OilPriceBody, Exception)> GetOilPrice(string date)
         {
             try
             {
-                OilPrice oilPrice = await _oilPriceRepository.GetOilPrice(date);
+                Exception e;
+                DateOnly dateOnly;
+                string dateString;
+                (dateOnly, e) = DateTimeParser.ParserDateFromString(date);
+                (dateString, e) = DateTimeParser.DateOnlyToString(dateOnly);
+
+                OilPrice oilPrice = await _oilPriceRepository.GetOilPrice(dateOnly);
                 OilPriceBody oilPriceBody = new OilPriceBody();
+
 
                 if (oilPrice == null)
                 {
@@ -89,7 +107,7 @@ namespace BusRouteApi.ServiceLayer
 
                 oilPriceBody.Id = oilPrice.Id;
                 oilPriceBody.Price = oilPrice.Price;
-                oilPriceBody.Date = oilPrice.OilPriceDate;
+                oilPriceBody.OilPriceDate = dateString;
 
                 return (oilPriceBody, null);
 
@@ -97,6 +115,23 @@ namespace BusRouteApi.ServiceLayer
             catch (Exception e)
             {
                 return (null, e);
+            }
+        }
+
+        public async IAsyncEnumerable<OilPriceBody> GetOilPrices()
+        {
+            Exception e;
+            string dateOnly;
+
+            foreach (OilPrice oilPrice in await _oilPriceRepository.GetOilPrices())
+            {
+                (dateOnly, e) = DateTimeParser.DateOnlyToString(oilPrice.OilPriceDate);
+                yield return new OilPriceBody
+                {
+                    Id = oilPrice.Id,
+                    OilPriceDate = dateOnly,
+                    Price = oilPrice.Price
+                };
             }
         }
 

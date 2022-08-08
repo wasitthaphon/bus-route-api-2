@@ -16,10 +16,11 @@ namespace BusRouteApi.ServiceLayer
         }
 
         // Get bus by bus number 
-        public async Task<(Bus, Exception)> GetBus(string busNumber)
+        public async Task<(BusBody, Exception)> GetBus(string busNumber)
         {
             try
             {
+                BusBody busBody;
                 Bus bus = await _busRepository.GetBus(busNumber);
 
                 if (bus == null)
@@ -27,7 +28,9 @@ namespace BusRouteApi.ServiceLayer
                     return (null, new Exception("Something went wrong"));
                 }
 
-                return (bus, null);
+                busBody = new BusBody(bus);
+
+                return (busBody, null);
             }
             catch (Exception e)
             {
@@ -35,14 +38,22 @@ namespace BusRouteApi.ServiceLayer
             }
         }
 
+        public async IAsyncEnumerable<BusBody> GetAllBuses()
+        {
+            foreach (Bus bus in await _busRepository.GetAllBuses())
+            {
+                yield return new BusBody(bus);
+            }
+        }
+
         // Get bus suggestion
-        public async IAsyncEnumerable<Bus> GetBusesByTerm(string term)
+        public async IAsyncEnumerable<BusBody> GetBusesByTerm(string term)
         {
             Queue<Bus> buses = await _busRepository.GetBusesByTerm(term);
 
-            foreach (Bus bus in buses)
+            foreach (Bus bus in await _busRepository.GetBusesByTerm(term))
             {
-                yield return bus;
+                yield return new BusBody(bus);
             }
         }
 

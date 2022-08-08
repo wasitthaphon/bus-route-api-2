@@ -44,10 +44,33 @@ namespace BusRouteApi.ServiceLayer
             }
         }
 
-        public async Task<(Payee, Exception)> GetPayee(string payeeName)
+        public async Task<(PayeeBody, Exception)> GetPayee(int id)
         {
             try
             {
+                PayeeBody payeeBody;
+                Payee payee = await _payeeRepository.GetPayee(id);
+
+                if (payee == null)
+                {
+                    return (null, new Exception("Payee not found"));
+                }
+
+                payeeBody = new PayeeBody(payee);
+
+                return (payeeBody, null);
+            }
+            catch (Exception e)
+            {
+                return (null, e);
+            }
+        }
+
+        public async Task<(PayeeBody, Exception)> GetPayee(string payeeName)
+        {
+            try
+            {
+                PayeeBody payeeBody;
                 Payee payee = await _payeeRepository.GetPayee(payeeName);
 
                 if (payee == null)
@@ -55,11 +78,31 @@ namespace BusRouteApi.ServiceLayer
                     return (null, new Exception("Payee not found"));
                 }
 
-                return (payee, null);
+                payeeBody = new PayeeBody(payee);
+
+                return (payeeBody, null);
             }
             catch (Exception e)
             {
                 return (null, e);
+            }
+        }
+
+        public async IAsyncEnumerable<PayeeBody> GetPayees(string term)
+        {
+            Queue<Payee> payees = await _payeeRepository.GetPayees(term);
+
+            foreach (Payee payee in payees)
+            {
+                yield return new PayeeBody(payee);
+            }
+        }
+
+        public async IAsyncEnumerable<PayeeBody> GetAllPayees()
+        {
+            foreach (Payee payee in await _payeeRepository.GetAllPayees())
+            {
+                yield return new PayeeBody(payee);
             }
         }
 
