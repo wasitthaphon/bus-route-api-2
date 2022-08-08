@@ -23,7 +23,7 @@ namespace BusRouteApi.RepositoryLayer
             {
                 throw e;
             }
-            
+
             return true;
         }
 
@@ -39,6 +39,33 @@ namespace BusRouteApi.RepositoryLayer
                 throw e;
             }
         }
+
+        public async Task<Queue<User>> GetUsers(string term)
+        {
+            Queue<User> users = new Queue<User>();
+
+
+            foreach (User user in await _context.Users.Where(users => users.Username.ToUpper().Contains(term.Trim().ToUpper())).ToListAsync())
+            {
+                users.Enqueue(user);
+            }
+
+            return users;
+        }
+
+        public async Task<Queue<User>> GetUsers()
+        {
+            Queue<User> users = new Queue<User>();
+
+            foreach (User user in await _context.Users.Where(users => true).ToListAsync())
+            {
+                users.Enqueue(user);
+            }
+
+
+            return users;
+        }
+
 
         public async Task<User> GetUser(string username)
         {

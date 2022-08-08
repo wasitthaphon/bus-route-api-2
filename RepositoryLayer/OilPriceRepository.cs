@@ -51,18 +51,25 @@ namespace BusRouteApi.RepositoryLayer
             try
             {
                 OilPrice oilPrice = await _context.OilPrices.FirstOrDefaultAsync(oilPrice => oilPrice.OilPriceDate == date);
-
-                if (oilPrice == null)
-                {
-                    throw new Exception("Oil price not found");
-                }
-
                 return oilPrice;
             }
             catch (Exception e)
             {
                 throw e;
             }
+        }
+
+        public async Task<Queue<OilPrice>> GetOilPrices()
+        {
+            Queue<OilPrice> oilPrices = new Queue<OilPrice>();
+
+            foreach (OilPrice oilPrice in await _context.OilPrices.Where(oilPrices => true).ToListAsync())
+            {
+                oilPrices.Enqueue(oilPrice);
+            }
+
+            return oilPrices;
+
         }
 
         public async Task<bool> UpdateOilPrice(OilPrice newOilPrice)

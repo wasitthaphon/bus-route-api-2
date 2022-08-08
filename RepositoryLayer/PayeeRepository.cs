@@ -28,6 +28,28 @@ namespace BusRouteApi.RepositoryLayer
 
             return true;
         }
+
+        public async Task<Queue<Payee>> GetPayees(string term)
+        {
+            Queue<Payee> payees = new Queue<Payee>();
+
+            if (term.Trim().Length > 0)
+            {
+                foreach (Payee payee in await _context.Payees.Where(payee => payee.Name.ToUpper().Contains(term.ToUpper())).ToListAsync())
+                {
+                    payees.Enqueue(payee);
+                }
+            }
+            else
+            {
+                foreach (Payee payee in await _context.Payees.Where(payees => true).ToListAsync())
+                {
+                    payees.Enqueue(payee);
+                }
+            }
+
+            return payees;
+        }
         public async Task<Payee> GetPayee(int id)
         {
             try
@@ -45,6 +67,18 @@ namespace BusRouteApi.RepositoryLayer
             {
                 throw e;
             }
+        }
+
+        public async Task<Queue<Payee>> GetAllPayees()
+        {
+            Queue<Payee> payees = new Queue<Payee>();
+
+            foreach (Payee payee in await _context.Payees.Where(payees => true).ToListAsync())
+            {
+                payees.Enqueue(payee);
+            }
+
+            return payees;
         }
         public async Task<Payee> GetPayee(string payeeName)
         {

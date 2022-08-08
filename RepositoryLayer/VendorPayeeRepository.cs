@@ -29,22 +29,18 @@ namespace BusRouteApi.RepositoryLayer
 
         public async Task<VendorPayee> GetVendorPayee(int id)
         {
-            try
-            {
 
-                VendorPayee vendorPayee = await _context.VendorPayees.FirstOrDefaultAsync(vendorPayee => vendorPayee.Id == id);
+            VendorPayee vendorPayee = await _context.VendorPayees.FirstOrDefaultAsync(vendorPayee => vendorPayee.Id == id);
 
-                if (vendorPayee == null)
-                {
-                    throw new Exception("Vendor payee not found");
-                }
+            return vendorPayee;
+        }
 
-                return vendorPayee;
-            }
-            catch (Exception e)
-            {
-                throw e;
-            }
+        public async Task<VendorPayee> GetVendorPayee(int vendorId, int payeeId)
+        {
+
+            VendorPayee vendorPayee = await _context.VendorPayees.FirstOrDefaultAsync(vendorPayee => (vendorPayee.VendorId == vendorId) && (vendorPayee.PayeeId == payeeId));
+
+            return vendorPayee;
         }
 
         public async Task<bool> UpdateVendorPayee(VendorPayee vendorPayee)
@@ -75,6 +71,34 @@ namespace BusRouteApi.RepositoryLayer
             }
 
             return true;
+        }
+
+        public async Task<Queue<VendorPayee>> GetVendorPayees(int vendorId)
+        {
+            Queue<VendorPayee> vendorPayees = new Queue<VendorPayee>();
+
+            foreach (VendorPayee vendorPayee in await _context.VendorPayees.Where(vendorPayees => vendorPayees.VendorId == vendorId).ToListAsync())
+            {
+                vendorPayees.Enqueue(vendorPayee);
+            }
+
+            return vendorPayees;
+        }
+
+        public async Task<bool> DeleteVendorPayees(List<VendorPayee> vendorPayees)
+        {
+            try
+            {
+
+                _context.VendorPayees.RemoveRange(vendorPayees);
+                await _context.SaveChangesAsync();
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                return false;
+            }
         }
     }
 }

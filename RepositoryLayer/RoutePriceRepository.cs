@@ -31,12 +31,9 @@ namespace BusRouteApi.RepositoryLayer
         {
             try
             {
-                RoutePrice routePrice = await _context.RoutePrices.FirstOrDefaultAsync(routePrice => routePrice.Id == id);
-
-                if (routePrice == null)
-                {
-                    throw new Exception("Route price not found");
-                }
+                RoutePrice routePrice = await _context.RoutePrices
+                                    .Include(routePrice => routePrice.Route)
+                                    .FirstOrDefaultAsync(routePrice => routePrice.Id == id);
 
                 return routePrice;
             }
@@ -44,6 +41,60 @@ namespace BusRouteApi.RepositoryLayer
             {
                 throw e;
             }
+        }
+
+        public async Task<RoutePrice> GetInBoundRoutePrice(int id, DateOnly startDate)
+        {
+            try
+            {
+                RoutePrice routePrice = await _context.RoutePrices.Include(routePrice => routePrice.Route)
+                                    .OrderByDescending(routePrice => routePrice.RouteDate <= startDate)
+                                    .FirstOrDefaultAsync(routePrice => routePrice.Route.Id == id);
+
+                return routePrice;
+            }
+            catch (Exception e)
+            {
+                throw e;
+            }
+        }
+        public async Task<RoutePrice> GetRoutePrice(int routeId, DateOnly routeDate)
+        {
+            try
+            {
+                RoutePrice routePrice = await _context.RoutePrices
+                                        .Include(routePrice => routePrice.Route)
+                                        .FirstOrDefaultAsync(routePrice => (routePrice.Id == routeId) && (routePrice.RouteDate == routeDate));
+
+                return routePrice;
+            }
+            catch (Exception e)
+            {
+                throw e;
+            }
+        }
+
+        public async Task<Queue<RoutePrice>> GetRoutePrices(int id)
+        {
+            Queue<RoutePrice> routePrices = new Queue<RoutePrice>();
+
+            foreach (RoutePrice routePrice in await _context.RoutePrices.Include(routePrices => routePrices.Route).Where(routePrices => routePrices.RouteId == id).ToListAsync())
+            {
+                routePrices.Enqueue(routePrice);
+            }
+
+            return routePrices;
+        }
+
+        public async Task<Queue<RoutePrice>> GetRoutePrices()
+        {
+            Queue<RoutePrice> routePrices = new Queue<RoutePrice>();
+            foreach (RoutePrice routePrice in await _context.RoutePrices.Include(routePrices => routePrices.Route).Where(routePrices => true).ToListAsync())
+            {
+                routePrices.Enqueue(routePrice);
+            }
+
+            return routePrices;
         }
 
         public async Task<bool> UpdateRoutePrice(RoutePrice routePrice)

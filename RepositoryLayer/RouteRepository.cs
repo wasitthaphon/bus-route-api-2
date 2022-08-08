@@ -34,11 +34,6 @@ namespace BusRouteApi.RepositoryLayer
             {
                 DatabaseLayer.Models.Route route = await _context.Routes.FirstOrDefaultAsync(route => route.Id == id);
 
-                if (route == null)
-                {
-                    throw new Exception("Route not found");
-                }
-
                 return route;
             }
             catch (Exception e)
@@ -54,17 +49,60 @@ namespace BusRouteApi.RepositoryLayer
             {
                 DatabaseLayer.Models.Route route = await _context.Routes.FirstOrDefaultAsync(route => string.Compare(route.Name, name) == COMPARE_MATCH);
 
-                if (route == null)
-                {
-                    throw new Exception("Route not found");
-                }
-
                 return route;
             }
             catch (Exception e)
             {
                 throw e;
             }
+        }
+
+        public async Task<Queue<DatabaseLayer.Models.Route>> GetRoutes(string nameTerm)
+        {
+            Queue<DatabaseLayer.Models.Route> routes = new Queue<DatabaseLayer.Models.Route>();
+
+            foreach (DatabaseLayer.Models.Route route in await _context.Routes.Where(routes => routes.Name.ToUpper().Contains(nameTerm.ToUpper())).ToListAsync())
+            {
+                routes.Enqueue(route);
+            }
+
+            return routes;
+        }
+
+        public async Task<Queue<DatabaseLayer.Models.Route>> GetRoutesByType(string nameTerm, string type)
+        {
+            Queue<DatabaseLayer.Models.Route> routes = new Queue<DatabaseLayer.Models.Route>();
+
+            foreach (DatabaseLayer.Models.Route route in await _context.Routes.Where(routes => routes.Name.ToUpper().Contains(nameTerm.ToUpper()) && routes.RouteType == type).ToListAsync())
+            {
+                routes.Enqueue(route);
+            }
+
+            return routes;
+        }
+
+        public async Task<Queue<DatabaseLayer.Models.Route>> GetAllGeneralRoute()
+        {
+            Queue<DatabaseLayer.Models.Route> routes = new Queue<DatabaseLayer.Models.Route>();
+
+            foreach (DatabaseLayer.Models.Route route in await _context.Routes.Where(routes => routes.RouteType == "General").ToListAsync())
+            {
+                routes.Enqueue(route);
+            }
+
+            return routes;
+        }
+
+        public async Task<Queue<DatabaseLayer.Models.Route>> GetAllRoutes()
+        {
+            Queue<DatabaseLayer.Models.Route> routes = new Queue<DatabaseLayer.Models.Route>();
+
+            foreach (DatabaseLayer.Models.Route route in await _context.Routes.Where(routes => true).ToListAsync())
+            {
+                routes.Enqueue(route);
+            }
+
+            return routes;
         }
 
         public async Task<bool> UpdateRoute(DatabaseLayer.Models.Route newRoute)

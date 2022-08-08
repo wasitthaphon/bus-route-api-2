@@ -45,7 +45,19 @@ namespace BusRouteApi.RepositoryLayer
         {
             Queue<Bus> buses = new Queue<Bus>();
 
-            foreach (Bus bus in await _context.Buses.Where(bus => bus.BusNumber.ToUpper().Contains(term.ToUpper())).ToListAsync())
+            foreach (Bus bus in await _context.Buses.Include(buses => buses.Payee).Where(bus => bus.BusNumber.ToUpper().Contains(term.ToUpper())).ToListAsync())
+            {
+                buses.Enqueue(bus);
+            }
+
+            return buses;
+        }
+
+        public async Task<Queue<Bus>> GetAllBuses()
+        {
+            Queue<Bus> buses = new Queue<Bus>();
+
+            foreach (Bus bus in await _context.Buses.Include(buses => buses.Payee).Where(buses => true).ToListAsync())
             {
                 buses.Enqueue(bus);
             }
@@ -59,7 +71,9 @@ namespace BusRouteApi.RepositoryLayer
 
             try
             {
-                Bus bus = await _context.Buses.FirstOrDefaultAsync(bus => string.Compare(bus.BusNumber, busNumber) == COMPARE_MATCH);
+                Bus bus = await _context.Buses
+                .Include(bus => bus.Payee)
+                .FirstOrDefaultAsync(bus => string.Compare(bus.BusNumber, busNumber) == COMPARE_MATCH);
 
                 return bus;
             }
@@ -81,7 +95,7 @@ namespace BusRouteApi.RepositoryLayer
                 throw e;
             }
 
-            return false;
+            return true;
         }
 
         public async Task<bool> DeleteBus(Bus bus)

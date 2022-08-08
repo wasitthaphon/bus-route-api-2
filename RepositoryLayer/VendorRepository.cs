@@ -29,6 +29,19 @@ namespace BusRouteApi.RepositoryLayer
             return true;
         }
 
+        public async Task<Vendor> GetDefaultVendor()
+        {
+            try
+            {
+                Vendor vendor = await _context.Vendors.FirstOrDefaultAsync(vendor => true);
+                return vendor;
+            }
+            catch (Exception e)
+            {
+                throw e;
+            }
+        }
+
         public async Task<Vendor> GetVendor(int id)
         {
             try
