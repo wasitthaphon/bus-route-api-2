@@ -70,10 +70,29 @@ namespace BusRouteApi.RepositoryLayer
 
                 if (vendor == null)
                 {
-                    throw new Exception("Vendor not found");
+                    return null;
                 }
 
                 return vendor;
+            }
+            catch (Exception e)
+            {
+                throw e;
+            }
+        }
+
+        public async Task<Queue<Vendor>> GetVendors()
+        {
+            Queue<Vendor> vendors = new Queue<Vendor>();
+
+            try
+            {
+                foreach (Vendor vendor in await _context.Vendors.ToListAsync())
+                {
+                    vendors.Enqueue(vendor);
+                }
+
+                return vendors;
             }
             catch (Exception e)
             {

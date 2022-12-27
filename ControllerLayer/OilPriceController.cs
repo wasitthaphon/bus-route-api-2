@@ -3,6 +3,7 @@ using BusRouteApi.Helpers;
 using BusRouteApi.RequestModels;
 using BusRouteApi.ServiceLayer;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace BusRouteApi.ControllerLayer
 {
@@ -11,9 +12,11 @@ namespace BusRouteApi.ControllerLayer
     public class OilPriceController : ControllerBase
     {
         private readonly OilPriceService _oilPriceService;
-        public OilPriceController(OilPriceService oilPriceService)
+        private readonly PermissionAuthorize _permissionAuthorize;
+        public OilPriceController(OilPriceService oilPriceService, IHttpContextAccessor httpContext)
         {
             _oilPriceService = oilPriceService;
+            _permissionAuthorize = new PermissionAuthorize(httpContext);
         }
 
 
@@ -24,7 +27,7 @@ namespace BusRouteApi.ControllerLayer
             {
                 Queue<OilPriceBody> oilPrices = new Queue<OilPriceBody>();
 
-                await foreach (OilPriceBody oilPriceBody in _oilPriceService.GetOilPrices())
+                await foreach (OilPriceBody oilPriceBody in _oilPriceService.GetOilPrices(_permissionAuthorize._user.VendorId))
                 {
                     oilPrices.Enqueue(oilPriceBody);
                 }
@@ -56,7 +59,7 @@ namespace BusRouteApi.ControllerLayer
                 }
 
 
-                (oilPriceBody, e) = await _oilPriceService.GetOilPrice(date);
+                (oilPriceBody, e) = await _oilPriceService.GetOilPrice(date, _permissionAuthorize._user.VendorId);
 
                 if (e != null)
                 {
@@ -80,7 +83,7 @@ namespace BusRouteApi.ControllerLayer
                 bool result;
                 Exception e;
 
-                (result, e) = await _oilPriceService.CreateOilPrice(body);
+                (result, e) = await _oilPriceService.CreateOilPrice(body, _permissionAuthorize._user.VendorId);
 
                 if (e != null)
                 {
@@ -96,7 +99,7 @@ namespace BusRouteApi.ControllerLayer
             }
         }
 
-        [HttpPut("{id}")]
+        [HttpPut]
         public async Task<IActionResult> UpdateOilPrice([FromBody] OilPriceBody body)
         {
             try
@@ -104,7 +107,7 @@ namespace BusRouteApi.ControllerLayer
                 bool result;
                 Exception e;
 
-                (result, e) = await _oilPriceService.UpdateOilPrice(body);
+                (result, e) = await _oilPriceService.UpdateOilPrice(body, _permissionAuthorize._user.VendorId);
 
                 if (e != null)
                 {

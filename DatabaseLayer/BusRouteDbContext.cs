@@ -24,7 +24,8 @@ namespace BusRouteApi.DatabaseLayer
         public virtual DbSet<BusRoute> BusRoutes { get; set; } = null!;
         public virtual DbSet<OilPrice> OilPrices { get; set; } = null!;
         public virtual DbSet<Payee> Payees { get; set; } = null!;
-        public virtual DbSet<DatabaseLayer.Models.Route> Routes { get; set; } = null!;
+        public virtual DbSet<Models.Route> Routes { get; set; } = null!;
+        public virtual DbSet<RouteDistance> RouteDistances { get; set; } = null!;
         public virtual DbSet<RoutePrice> RoutePrices { get; set; } = null!;
         public virtual DbSet<Shift> Shifts { get; set; } = null!;
         public virtual DbSet<User> Users { get; set; } = null!;
@@ -35,7 +36,7 @@ namespace BusRouteApi.DatabaseLayer
         {
             if (!optionsBuilder.IsConfigured)
             {
-                optionsBuilder.UseNpgsql(_configuration.GetSection("AppSettings:Database").Value);
+                optionsBuilder.UseNpgsql(_configuration["AppSettings.Database"]);
             }
         }
 
@@ -57,6 +58,12 @@ namespace BusRouteApi.DatabaseLayer
                     .HasForeignKey(d => d.PayeeId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("PayeeId_Ref_Payee_Id");
+
+                entity.HasOne(d => d.Vendor)
+                    .WithMany(p => p.Bus)
+                    .HasForeignKey(d => d.VendorId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("VendorId_Ref_Vendor_Id");
             });
 
             modelBuilder.Entity<BusRoute>(entity =>
@@ -77,11 +84,11 @@ namespace BusRouteApi.DatabaseLayer
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("OilPriceId_Ref_OilPrice_Id");
 
-                entity.HasOne(d => d.RoutePrice)
+                entity.HasOne(d => d.Route)
                     .WithMany(p => p.BusRoutes)
-                    .HasForeignKey(d => d.RoutePriceId)
+                    .HasForeignKey(d => d.RouteId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("RoutePriceId_Ref_RoutePrice_Id");
+                    .HasConstraintName("RouteId_Ref_Route_Id");
 
                 entity.HasOne(d => d.Shift)
                     .WithMany(p => p.BusRoutes)
@@ -101,6 +108,12 @@ namespace BusRouteApi.DatabaseLayer
                 entity.ToTable("OilPrice");
 
                 entity.Property(e => e.Id).UseIdentityAlwaysColumn();
+
+                entity.HasOne(d => d.Vendor)
+                    .WithMany(p => p.OilPrices)
+                    .HasForeignKey(d => d.VendorId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("VendorId_Vendor_Id");
             });
 
             modelBuilder.Entity<Payee>(entity =>
@@ -110,9 +123,15 @@ namespace BusRouteApi.DatabaseLayer
                 entity.Property(e => e.Id).UseIdentityAlwaysColumn();
 
                 entity.Property(e => e.Name).HasMaxLength(100);
+
+                entity.HasOne(d => d.Vendor)
+                    .WithMany(p => p.Payees)
+                    .HasForeignKey(d => d.VendorId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("VendorId_Ref_Vendor_Id");
             });
 
-            modelBuilder.Entity<DatabaseLayer.Models.Route>(entity =>
+            modelBuilder.Entity<Models.Route>(entity =>
             {
                 entity.ToTable("Route");
 
@@ -121,6 +140,27 @@ namespace BusRouteApi.DatabaseLayer
                 entity.Property(e => e.Name).HasMaxLength(50);
 
                 entity.Property(e => e.RouteType).HasMaxLength(15);
+
+                entity.Property(e => e.Status).HasMaxLength(20);
+
+                entity.HasOne(d => d.Vendor)
+                    .WithMany(p => p.Routes)
+                    .HasForeignKey(d => d.VendorId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("VendorId_Ref_Vendor_Id");
+            });
+
+            modelBuilder.Entity<RouteDistance>(entity =>
+            {
+                entity.ToTable("RouteDistance");
+
+                entity.Property(e => e.Id).UseIdentityAlwaysColumn();
+
+                entity.HasOne(d => d.Route)
+                    .WithMany(p => p.RouteDistances)
+                    .HasForeignKey(d => d.RouteId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("Route_Id");
             });
 
             modelBuilder.Entity<RoutePrice>(entity =>
@@ -158,6 +198,12 @@ namespace BusRouteApi.DatabaseLayer
                 entity.Property(e => e.Role).HasMaxLength(15);
 
                 entity.Property(e => e.Username).HasMaxLength(50);
+
+                entity.HasOne(d => d.Vendor)
+                    .WithMany(p => p.Users)
+                    .HasForeignKey(d => d.VendorId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_Vendor_Id");
             });
 
             modelBuilder.Entity<Vendor>(entity =>

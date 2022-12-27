@@ -8,6 +8,7 @@ namespace BusRouteApi.RequestModels
         public string Token { get; set; }
         public string Name { get; set; }
         public string Role { get; set; }
+        public int VendorId { get; set; }
 
         public AuthenticateResponse(User user, string token)
         {
@@ -15,6 +16,7 @@ namespace BusRouteApi.RequestModels
             Name = user.Name;
             Role = user.Role.ToString();
             Token = token;
+            VendorId = user.VendorId;
         }
     }
 }

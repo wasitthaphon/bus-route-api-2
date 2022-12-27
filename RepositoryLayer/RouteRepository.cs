@@ -57,11 +57,40 @@ namespace BusRouteApi.RepositoryLayer
             }
         }
 
+        public async Task<Queue<DatabaseLayer.Models.Route>> GetRoutes(int vendorId, string status)
+        {
+            Queue<DatabaseLayer.Models.Route> routes = new Queue<DatabaseLayer.Models.Route>();
+
+
+            switch (status)
+            {
+                case "Active" or "InActive":
+                    foreach (DatabaseLayer.Models.Route route in await
+                            _context.Routes.Where(routes => routes.VendorId == vendorId && routes.Status == status).OrderBy(routes => routes.Name).ToListAsync())
+                    {
+                        routes.Enqueue(route);
+                    }
+                    break;
+                case "All":
+                    foreach (DatabaseLayer.Models.Route route in await
+                            _context.Routes.Where(routes => routes.VendorId == vendorId).OrderBy(routes => routes.Name).ToListAsync())
+                    {
+                        routes.Enqueue(route);
+                    }
+                    break;
+                default:
+                    break;
+
+            }
+
+            return routes;
+        }
+
         public async Task<Queue<DatabaseLayer.Models.Route>> GetRoutes(string nameTerm)
         {
             Queue<DatabaseLayer.Models.Route> routes = new Queue<DatabaseLayer.Models.Route>();
 
-            foreach (DatabaseLayer.Models.Route route in await _context.Routes.Where(routes => routes.Name.ToUpper().Contains(nameTerm.ToUpper())).ToListAsync())
+            foreach (DatabaseLayer.Models.Route route in await _context.Routes.Where(routes => routes.Name.ToUpper().Contains(nameTerm.ToUpper())).OrderBy(routes => routes.Name).ToListAsync())
             {
                 routes.Enqueue(route);
             }
@@ -73,7 +102,7 @@ namespace BusRouteApi.RepositoryLayer
         {
             Queue<DatabaseLayer.Models.Route> routes = new Queue<DatabaseLayer.Models.Route>();
 
-            foreach (DatabaseLayer.Models.Route route in await _context.Routes.Where(routes => routes.Name.ToUpper().Contains(nameTerm.ToUpper()) && routes.RouteType == type).ToListAsync())
+            foreach (DatabaseLayer.Models.Route route in await _context.Routes.Where(routes => routes.Name.ToUpper().Contains(nameTerm.ToUpper()) && routes.RouteType == type).OrderBy(routes => routes.Name).ToListAsync())
             {
                 routes.Enqueue(route);
             }
@@ -85,7 +114,7 @@ namespace BusRouteApi.RepositoryLayer
         {
             Queue<DatabaseLayer.Models.Route> routes = new Queue<DatabaseLayer.Models.Route>();
 
-            foreach (DatabaseLayer.Models.Route route in await _context.Routes.Where(routes => routes.RouteType == "General").ToListAsync())
+            foreach (DatabaseLayer.Models.Route route in await _context.Routes.Where(routes => routes.RouteType == "General").OrderBy(routes => routes.Name).ToListAsync())
             {
                 routes.Enqueue(route);
             }
@@ -93,13 +122,28 @@ namespace BusRouteApi.RepositoryLayer
             return routes;
         }
 
-        public async Task<Queue<DatabaseLayer.Models.Route>> GetAllRoutes()
+        public async Task<Queue<DatabaseLayer.Models.Route>> GetAllRoutes(int vendorId, string status)
         {
             Queue<DatabaseLayer.Models.Route> routes = new Queue<DatabaseLayer.Models.Route>();
 
-            foreach (DatabaseLayer.Models.Route route in await _context.Routes.Where(routes => true).ToListAsync())
+            switch (status)
             {
-                routes.Enqueue(route);
+                case "Active" or "InActive":
+
+                    foreach (DatabaseLayer.Models.Route route in await _context.Routes.Where(routes => routes.VendorId == vendorId && routes.Status == status).OrderBy(routes => routes.Name).ToListAsync())
+                    {
+                        routes.Enqueue(route);
+                    }
+                    break;
+                case "All":
+
+                    foreach (DatabaseLayer.Models.Route route in await _context.Routes.Where(routes => routes.VendorId == vendorId).OrderBy(routes => routes.Name).ToListAsync())
+                    {
+                        routes.Enqueue(route);
+                    }
+                    break;
+                default:
+                    break;
             }
 
             return routes;

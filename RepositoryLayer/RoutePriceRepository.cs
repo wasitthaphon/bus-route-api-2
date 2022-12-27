@@ -43,28 +43,13 @@ namespace BusRouteApi.RepositoryLayer
             }
         }
 
-        public async Task<RoutePrice> GetInBoundRoutePrice(int id, DateOnly startDate)
-        {
-            try
-            {
-                RoutePrice routePrice = await _context.RoutePrices.Include(routePrice => routePrice.Route)
-                                    .OrderByDescending(routePrice => routePrice.RouteDate <= startDate)
-                                    .FirstOrDefaultAsync(routePrice => routePrice.Route.Id == id);
-
-                return routePrice;
-            }
-            catch (Exception e)
-            {
-                throw e;
-            }
-        }
-        public async Task<RoutePrice> GetRoutePrice(int routeId, DateOnly routeDate)
+        public async Task<RoutePrice> GetRoutePrice(int routeId, int oilPriceReference)
         {
             try
             {
                 RoutePrice routePrice = await _context.RoutePrices
                                         .Include(routePrice => routePrice.Route)
-                                        .FirstOrDefaultAsync(routePrice => (routePrice.Id == routeId) && (routePrice.RouteDate == routeDate));
+                                        .FirstOrDefaultAsync(routePrice => (routePrice.RouteId == routeId) && (routePrice.OilPriceReference == oilPriceReference));
 
                 return routePrice;
             }
@@ -78,7 +63,9 @@ namespace BusRouteApi.RepositoryLayer
         {
             Queue<RoutePrice> routePrices = new Queue<RoutePrice>();
 
-            foreach (RoutePrice routePrice in await _context.RoutePrices.Include(routePrices => routePrices.Route).Where(routePrices => routePrices.RouteId == id).ToListAsync())
+            foreach (RoutePrice routePrice in await _context.RoutePrices.
+                                    Include(routePrices => routePrices.Route).
+                                    Where(routePrices => routePrices.RouteId == id).ToListAsync())
             {
                 routePrices.Enqueue(routePrice);
             }
@@ -123,7 +110,7 @@ namespace BusRouteApi.RepositoryLayer
             catch (Exception e)
             {
 
-                throw e;
+                throw new Exception("This route price is already in bus route, could not delete.");
             }
 
             return true;

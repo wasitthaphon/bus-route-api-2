@@ -4,6 +4,7 @@ namespace BusRouteApi.RequestModels
     {
         public string RouteName { get; set; }
         public int LapCount { get; set; }
+        public double NMBPrice { get; set; }
         public double TotalPrice { get; set; }
     }
 }

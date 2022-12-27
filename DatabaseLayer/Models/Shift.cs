@@ -8,6 +8,7 @@ namespace BusRouteApi.DatabaseLayer.Models
         public Shift(int sequence, string name)
         {
             BusRoutes = new HashSet<BusRoute>();
+
             Sequence = sequence;
             Name = name;
         }

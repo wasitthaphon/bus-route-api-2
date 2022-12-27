@@ -25,45 +25,23 @@ namespace BusRouteApi.ServiceLayer
             {
                 bool result;
                 Exception e;
-                DateOnly dateOnly;
-                (dateOnly, e) = DateTimeParser.ParserDateFromString(body.RouteDate);
 
-                if (e != null)
-                {
-                    return (false, new Exception("Could not parse date"));
-                }
-
-                // check date dup by route id and date
                 RouteBody routeBody;
-                (routeBody, e) = await _routeService.GetRoute(body.RouteName);
+                (routeBody, e) = await _routeService.GetRoute(body.RouteId);
 
-                if (e != null)
+                if (routeBody == null)
                 {
-                    routeBody = new RouteBody()
-                    {
-                        Name = body.RouteName,
-                        Distance = body.Distance,
-                        RouteType = body.RouteType
-                    };
-
-                    (result, e) = await _routeService.CreateRoute(routeBody);
-
-                    if (result == false)
-                    {
-                        return (false, e);
-                    }
-
-                    (routeBody, e) = await _routeService.GetRoute(body.RouteName);
+                    return (false, new Exception("Route not found."));
                 }
 
-                RoutePrice routePrice = await _routePriceRepository.GetRoutePrice(routeBody.Id, dateOnly);
+                RoutePrice routePrice = await _routePriceRepository.GetRoutePrice(routeBody.Id, body.OilPriceReference);
 
                 if (routePrice != null)
                 {
                     return (false, new Exception("This route price already exist"));
                 }
 
-                routePrice = new RoutePrice(dateOnly, body.Price, routeBody.Id);
+                routePrice = new RoutePrice(body.OilPriceReference, body.Price, routeBody.Id);
 
                 result = await _routePriceRepository.CreateRoutePrice(routePrice);
 
@@ -87,41 +65,13 @@ namespace BusRouteApi.ServiceLayer
             {
                 bool result;
                 Exception e;
-                DateOnly dateOnly;
                 RouteBody routeBody;
+
                 RoutePrice routePrice = await _routePriceRepository.GetRoutePrice(body.Id);
-
-                (dateOnly, e) = DateTimeParser.ParserDateFromString(body.RouteDate);
-
-                // check already exist
-                if (routePrice.RouteId != body.RouteId || routePrice.RouteDate != dateOnly)
-                {
-                    RoutePrice newRoutePrice = await _routePriceRepository.GetRoutePrice(body.RouteId, dateOnly);
-
-                    if (newRoutePrice != null)
-                    {
-                        return (false, new Exception("Route price already exist"));
-                    }
-                }
 
                 routePrice.Price = body.Price;
                 routePrice.RouteId = body.RouteId;
-                routePrice.RouteDate = dateOnly;
-
-                routeBody = new RouteBody()
-                {
-                    Id = body.RouteId,
-                    Distance = body.Distance,
-                    Name = body.RouteName,
-                    RouteType = body.RouteType
-                };
-
-                (result, e) = await _routeService.UpdateRoute(routeBody);
-
-                if (result == false)
-                {
-                    return (false, new Exception("Could not update route"));
-                }
+                routePrice.OilPriceReference = body.OilPriceReference;
 
                 result = await _routePriceRepository.UpdateRoutePrice(routePrice);
 
@@ -161,18 +111,6 @@ namespace BusRouteApi.ServiceLayer
                     return (false, new Exception("Could not delete route price"));
                 }
 
-                remainingRoutePrice = await _routePriceRepository.GetRoutePrices(routePrice.Route.Id);
-
-                if (remainingRoutePrice.Count == 0)
-                {
-                    (result, e) = await _routeService.DeleteRoute(routePrice.Route.Id);
-
-                    if (result == false)
-                    {
-                        return (false, new Exception("Could not delete route"));
-                    }
-                }
-
                 return (true, null);
             }
             catch (Exception e)
@@ -197,17 +135,11 @@ namespace BusRouteApi.ServiceLayer
                     return (null, new Exception("Route price not found"));
                 }
 
-
-                (dateString, e) = DateTimeParser.DateOnlyToString(routePrice.RouteDate);
-
                 routePriceBody = new RoutePriceBody()
                 {
                     Id = routePrice.Id,
                     Price = routePrice.Price,
-                    RouteDate = dateString,
-                    RouteName = routePrice.Route.Name,
-                    RouteType = routePrice.Route.RouteType,
-                    Distance = routePrice.Route.Distance,
+                    OilPriceReference = routePrice.OilPriceReference,
                     RouteId = routePrice.RouteId
                 };
 
@@ -226,14 +158,12 @@ namespace BusRouteApi.ServiceLayer
             Exception e;
             foreach (RoutePrice routePrice in await _routePriceRepository.GetRoutePrices(id))
             {
-                (dateString, e) = DateTimeParser.DateOnlyToString(routePrice.RouteDate);
                 yield return new RoutePriceBody()
                 {
                     Id = routePrice.Id,
                     Price = routePrice.Price,
-                    RouteDate = dateString,
+                    OilPriceReference = routePrice.OilPriceReference,
                     RouteId = routePrice.RouteId,
-                    RouteName = routePrice.Route.Name
                 };
             }
         }
@@ -245,15 +175,12 @@ namespace BusRouteApi.ServiceLayer
             Exception e;
             foreach (RoutePrice routePrice in await _routePriceRepository.GetRoutePrices())
             {
-                (dateString, e) = DateTimeParser.DateOnlyToString(routePrice.RouteDate);
                 yield return new RoutePriceBody()
                 {
                     Id = routePrice.Id,
                     Price = routePrice.Price,
-                    RouteDate = dateString,
-                    Distance = routePrice.Route.Distance,
+                    OilPriceReference = routePrice.OilPriceReference,
                     RouteId = routePrice.RouteId,
-                    RouteName = routePrice.Route.Name
                 };
             }
         }

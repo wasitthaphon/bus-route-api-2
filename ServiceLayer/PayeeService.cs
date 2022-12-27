@@ -19,14 +19,14 @@ namespace BusRouteApi.ServiceLayer
             try
             {
                 bool result = false;
-                Payee payee = await _payeeRepository.GetPayee(body.Name);
+                Payee payee = await _payeeRepository.GetPayee(body.Name, body.VendorId);
 
                 if (payee != null)
                 {
                     return (false, new Exception("Payee already created."));
                 }
 
-                payee = new Payee(body.Name);
+                payee = new Payee(body.Name, body.VendorId);
 
                 result = await _payeeRepository.CreatePayee(payee);
 
@@ -66,12 +66,12 @@ namespace BusRouteApi.ServiceLayer
             }
         }
 
-        public async Task<(PayeeBody, Exception)> GetPayee(string payeeName)
+        public async Task<(PayeeBody, Exception)> GetPayee(string payeeName, int vendorId)
         {
             try
             {
                 PayeeBody payeeBody;
-                Payee payee = await _payeeRepository.GetPayee(payeeName);
+                Payee payee = await _payeeRepository.GetPayee(payeeName, vendorId);
 
                 if (payee == null)
                 {
@@ -88,9 +88,9 @@ namespace BusRouteApi.ServiceLayer
             }
         }
 
-        public async IAsyncEnumerable<PayeeBody> GetPayees(string term)
+        public async IAsyncEnumerable<PayeeBody> GetPayees(string term, int vendorId)
         {
-            Queue<Payee> payees = await _payeeRepository.GetPayees(term);
+            Queue<Payee> payees = await _payeeRepository.GetPayees(term, vendorId);
 
             foreach (Payee payee in payees)
             {
@@ -98,9 +98,9 @@ namespace BusRouteApi.ServiceLayer
             }
         }
 
-        public async IAsyncEnumerable<PayeeBody> GetAllPayees()
+        public async IAsyncEnumerable<PayeeBody> GetAllPayees(int vendorId)
         {
-            foreach (Payee payee in await _payeeRepository.GetAllPayees())
+            foreach (Payee payee in await _payeeRepository.GetAllPayees(vendorId))
             {
                 yield return new PayeeBody(payee);
             }

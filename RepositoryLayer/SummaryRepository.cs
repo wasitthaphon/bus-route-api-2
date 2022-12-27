@@ -26,8 +26,7 @@ namespace BusRouteApi.RepositoryLayer
                                             .Where(busRoutes =>
                                             busRoutes.BusRouteDate >= dateFrom && busRoutes.BusRouteDate <= dateTo && bus.Id == busRoutes.BusId)
                                             .Include(busRoutes => busRoutes.Bus)
-                                            .Include(busRoutes => busRoutes.RoutePrice)
-                                            .ThenInclude(busRoutes => busRoutes.Route)
+                                            .Include(busRoutes => busRoutes.Route)
                                             .Include(busRoutes => busRoutes.OilPrice)
                                             .OrderBy(busRoutes => busRoutes.BusRouteDate)
                                             .ToListAsync())
@@ -54,8 +53,7 @@ namespace BusRouteApi.RepositoryLayer
                 foreach (BusRoute busRoute in await _context.BusRoutes
                                             .Where(busRoutes =>
                                             busRoutes.BusRouteDate >= fromDate && busRoutes.BusRouteDate <= toDate)
-                                            .Include(busRoutes => busRoutes.RoutePrice)
-                                            .ThenInclude(busRoutes => busRoutes.Route)
+                                            .Include(busRoutes => busRoutes.Route)
                                             .Include(busRoutes => busRoutes.OilPrice)
                                             .OrderBy(busRoutes => busRoutes.BusRouteDate).ToListAsync())
                 {
@@ -70,7 +68,7 @@ namespace BusRouteApi.RepositoryLayer
             }
         }
 
-        public async Task<Queue<BusRoute>> GetSummaryByPayee(DateOnly dateFrom, DateOnly dateTo)
+        public async Task<Queue<BusRoute>> GetSummaryByPayee(DateOnly dateFrom, DateOnly dateTo, int vendorId)
         {
 
             try
@@ -83,9 +81,8 @@ namespace BusRouteApi.RepositoryLayer
                                             .ThenInclude(busRoutes => busRoutes.Payee)
                                             .Where(busRoutes =>
                                             busRoutes.BusRouteDate >= dateFrom &&
-                                            busRoutes.BusRouteDate <= dateTo)
-                                            .Include(busRoutes => busRoutes.RoutePrice)
-                                            .ThenInclude(busRoutes => busRoutes.Route)
+                                            busRoutes.BusRouteDate <= dateTo && busRoutes.VendorId == vendorId)
+                                            .Include(busRoutes => busRoutes.Route)
                                             .Include(busRoutes => busRoutes.OilPrice)
                                             .OrderBy(busRoutes => busRoutes.BusRouteDate)
                                             .ToListAsync())

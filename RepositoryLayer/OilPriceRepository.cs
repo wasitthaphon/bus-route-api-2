@@ -46,11 +46,11 @@ namespace BusRouteApi.RepositoryLayer
             }
         }
 
-        public async Task<OilPrice> GetOilPrice(DateOnly date)
+        public async Task<OilPrice> GetOilPrice(DateOnly date, int vendorId)
         {
             try
             {
-                OilPrice oilPrice = await _context.OilPrices.FirstOrDefaultAsync(oilPrice => oilPrice.OilPriceDate == date);
+                OilPrice oilPrice = await _context.OilPrices.FirstOrDefaultAsync(oilPrice => oilPrice.OilPriceDate == date && oilPrice.VendorId == vendorId);
                 return oilPrice;
             }
             catch (Exception e)
@@ -59,11 +59,11 @@ namespace BusRouteApi.RepositoryLayer
             }
         }
 
-        public async Task<Queue<OilPrice>> GetOilPrices()
+        public async Task<Queue<OilPrice>> GetOilPrices(int vendorId)
         {
             Queue<OilPrice> oilPrices = new Queue<OilPrice>();
 
-            foreach (OilPrice oilPrice in await _context.OilPrices.Where(oilPrices => true).ToListAsync())
+            foreach (OilPrice oilPrice in await _context.OilPrices.Where(oilPrices => oilPrices.VendorId == vendorId).ToListAsync())
             {
                 oilPrices.Enqueue(oilPrice);
             }

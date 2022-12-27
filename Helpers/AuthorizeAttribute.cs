@@ -1,4 +1,5 @@
 using BusRouteApi.DatabaseLayer.Models;
+using BusRouteApi.RequestModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 
@@ -9,7 +10,7 @@ namespace BusRouteApi.Helpers
     {
         public void OnAuthorization(AuthorizationFilterContext context)
         {
-            User user = (User)context.HttpContext.Items["User"];
+            UserBody user = (UserBody)context.HttpContext.Items["User"];
 
             if (user == null)
             {
@@ -17,6 +18,7 @@ namespace BusRouteApi.Helpers
                 {
                     StatusCode = StatusCodes.Status401Unauthorized
                 };
+                return;
             }
         }
     }

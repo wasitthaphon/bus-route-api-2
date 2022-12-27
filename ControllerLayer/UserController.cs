@@ -1,9 +1,12 @@
 using System.Net;
+using BusRouteApi.DatabaseLayer.Models;
 using BusRouteApi.Helpers;
+using BusRouteApi.Misc;
 using BusRouteApi.RequestModels;
 using BusRouteApi.ServiceLayer;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
+using AuthorizeAttribute = BusRouteApi.Helpers.AuthorizeAttribute;
 
 namespace BusRouteApi.ControllerLayer
 {
@@ -13,9 +16,15 @@ namespace BusRouteApi.ControllerLayer
     {
 
         private readonly UserService _userService;
-        public UserController(UserService userService)
+        private readonly PermissionAuthorize _permissionAuthorize;
+        public UserController
+        (
+            UserService userService,
+            IHttpContextAccessor httpContextAccessor
+        )
         {
             _userService = userService;
+            _permissionAuthorize = new PermissionAuthorize(httpContextAccessor);
         }
 
         [HttpPost("register")]
@@ -64,13 +73,28 @@ namespace BusRouteApi.ControllerLayer
             }
         }
 
+        [Authorize]
         [HttpGet("all")]
         public async Task<IActionResult> GetUsers()
         {
             try
             {
+
+                bool isAdmin, isClerk;
+                Exception e;
+                (isAdmin, e) = await _permissionAuthorize.IsRolePermit(
+                    new List<string> { Role.Admin.ToString() });
+
+                (isClerk, e) = await _permissionAuthorize.IsRolePermit(
+                    new List<string> { Role.Clerk.ToString() });
+
+                if (!isAdmin && !isClerk)
+                {
+                    return StatusCode((int)HttpStatusCode.Unauthorized, new { message = "Unauthorized" });
+                }
+
                 Queue<UserBody> userBodies = new Queue<UserBody>();
-                await foreach (UserBody userBody in _userService.GetUsers())
+                await foreach (UserBody userBody in _userService.GetUsers(_permissionAuthorize._user))
                 {
                     userBodies.Enqueue(userBody);
                 }
@@ -82,6 +106,7 @@ namespace BusRouteApi.ControllerLayer
             }
         }
 
+        [Authorize]
         [HttpGet]
         public async Task<IActionResult> GetUsers([FromQuery] UserQuery query)
         {
@@ -89,7 +114,7 @@ namespace BusRouteApi.ControllerLayer
             {
                 Queue<UserBody> userBodies = new Queue<UserBody>();
 
-                await foreach (UserBody userBody in _userService.GetUsers(query.Term))
+                await foreach (UserBody userBody in _userService.GetUsers(query.Term, (UserBody)HttpContext.Items["User"]))
                 {
                     userBodies.Enqueue(userBody);
                 }
@@ -101,6 +126,7 @@ namespace BusRouteApi.ControllerLayer
             }
         }
 
+        [Authorize]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetUser(int id)
         {
@@ -124,6 +150,7 @@ namespace BusRouteApi.ControllerLayer
             }
         }
 
+        [Authorize]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateUser([FromBody] UserBody userBody, int id)
         {
@@ -147,6 +174,7 @@ namespace BusRouteApi.ControllerLayer
             }
         }
 
+        [Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(int id)
         {

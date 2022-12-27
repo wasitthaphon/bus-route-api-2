@@ -3,17 +3,17 @@ using System.Collections.Generic;
 
 namespace BusRouteApi.DatabaseLayer.Models
 {
-    public partial class RoutePrice
+    public partial class RouteDistance
     {
         public int Id { get; set; }
-        public double Price { get; set; }
+        public int Distance { get; set; }
+        public DateOnly RouteDate { get; set; }
         public int RouteId { get; set; }
-        public int OilPriceReference { get; set; }
 
-        public RoutePrice(int oilPriceReference, double price, int routeId)
+        public RouteDistance(DateOnly routeDate, int distance, int routeId)
         {
-            OilPriceReference = oilPriceReference;
-            Price = price;
+            RouteDate = routeDate;
+            Distance = distance;
             RouteId = routeId;
         }
 

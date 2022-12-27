@@ -16,12 +16,12 @@ namespace BusRouteApi.ServiceLayer
         }
 
         // Get bus by bus number 
-        public async Task<(BusBody, Exception)> GetBus(string busNumber)
+        public async Task<(BusBody, Exception)> GetBus(string busNumber, int vendorId)
         {
             try
             {
                 BusBody busBody;
-                Bus bus = await _busRepository.GetBus(busNumber);
+                Bus bus = await _busRepository.GetBus(busNumber, vendorId);
 
                 if (bus == null)
                 {
@@ -38,34 +38,34 @@ namespace BusRouteApi.ServiceLayer
             }
         }
 
-        public async IAsyncEnumerable<BusBody> GetAllBuses()
+        public async IAsyncEnumerable<BusBody> GetAllBuses(int vendorId)
         {
-            foreach (Bus bus in await _busRepository.GetAllBuses())
+            foreach (Bus bus in await _busRepository.GetAllBuses(vendorId))
             {
                 yield return new BusBody(bus);
             }
         }
 
         // Get bus suggestion
-        public async IAsyncEnumerable<BusBody> GetBusesByTerm(string term)
+        public async IAsyncEnumerable<BusBody> GetBusesByTerm(string term, int vendorId)
         {
-            Queue<Bus> buses = await _busRepository.GetBusesByTerm(term);
+            Queue<Bus> buses = await _busRepository.GetBusesByTerm(term, vendorId);
 
-            foreach (Bus bus in await _busRepository.GetBusesByTerm(term))
+            foreach (Bus bus in await _busRepository.GetBusesByTerm(term, vendorId))
             {
                 yield return new BusBody(bus);
             }
         }
 
         // Create new bus
-        public async Task<(bool, Exception)> CreateBus(BusBody body)
+        public async Task<(bool, Exception)> CreateBus(BusBody body, int vendorId)
         {
 
             try
             {
                 bool result = false;
-                Bus bus = await _busRepository.GetBus(body.BusNumber);
-                Payee payee = await _payeeRepository.GetPayee(body.PayeeName);
+                Bus bus = await _busRepository.GetBus(body.BusNumber, vendorId);
+                Payee payee = await _payeeRepository.GetPayee(body.PayeeName, vendorId);
 
                 if (bus != null)
                 {
@@ -77,7 +77,7 @@ namespace BusRouteApi.ServiceLayer
                     return (false, new Exception($"Payee name {body.PayeeName} not found"));
                 }
 
-                bus = new Bus(body.BusNumber, payee.Id);
+                bus = new Bus(body.BusNumber, payee.Id, vendorId);
 
                 result = await _busRepository.CreateBus(bus);
 
@@ -95,13 +95,13 @@ namespace BusRouteApi.ServiceLayer
         }
 
         // Update bus
-        public async Task<(bool, Exception)> UpdateBus(BusBody body)
+        public async Task<(bool, Exception)> UpdateBus(BusBody body, int vendorId)
         {
             try
             {
                 bool result = false;
-                Bus bus = await _busRepository.GetBus(body.BusNumber);
-                Payee payee = await _payeeRepository.GetPayee(body.PayeeName);
+                Bus bus = await _busRepository.GetBus(body.BusNumber, vendorId);
+                Payee payee = await _payeeRepository.GetPayee(body.PayeeName, vendorId);
 
                 if (bus == null)
                 {
@@ -132,11 +132,11 @@ namespace BusRouteApi.ServiceLayer
         }
 
         // Delete bus
-        public async Task<(bool, Exception)> DeleteBus(string busNumber)
+        public async Task<(bool, Exception)> DeleteBus(string busNumber, int vendorId)
         {
             try
             {
-                Bus bus = await _busRepository.GetBus(busNumber);
+                Bus bus = await _busRepository.GetBus(busNumber, vendorId);
 
                 if (bus == null)
                 {

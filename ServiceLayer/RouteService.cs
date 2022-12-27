@@ -27,7 +27,7 @@ namespace BusRouteApi.ServiceLayer
                     return (false, new Exception("Route already created"));
                 }
 
-                route = new DatabaseLayer.Models.Route(body.Name, body.Distance, body.RouteType);
+                route = new DatabaseLayer.Models.Route(body.Name, body.RouteType, body.VendorId);
 
                 result = await _routeRepository.CreateRoute(route);
 
@@ -77,8 +77,9 @@ namespace BusRouteApi.ServiceLayer
                 }
 
                 route.Name = body.Name;
-                route.Distance = body.Distance;
+                route.VendorId = body.VendorId;
                 route.RouteType = body.RouteType;
+                route.Status = body.Status;
 
                 result = await _routeRepository.UpdateRoute(route);
 
@@ -138,8 +139,9 @@ namespace BusRouteApi.ServiceLayer
 
                 body.Id = route.Id;
                 body.Name = route.Name;
-                body.Distance = route.Distance;
+                body.VendorId = route.VendorId;
                 body.RouteType = route.RouteType.ToString();
+                body.Status = route.Status;
 
                 return (body, null);
             }
@@ -164,8 +166,9 @@ namespace BusRouteApi.ServiceLayer
 
                 body.Id = route.Id;
                 body.Name = route.Name;
-                body.Distance = route.Distance;
+                body.VendorId = route.VendorId;
                 body.RouteType = route.RouteType.ToString();
+                body.Status = route.Status;
 
                 return (body, null);
             }
@@ -184,21 +187,39 @@ namespace BusRouteApi.ServiceLayer
                 {
                     Id = route.Id,
                     Name = route.Name,
-                    Distance = route.Distance,
-                    RouteType = route.RouteType.ToString()
+                    VendorId = route.VendorId,
+                    RouteType = route.RouteType,
+                    Status = route.Status
                 };
             }
         }
 
-        public async IAsyncEnumerable<RouteBody> GetRoutesByType(string nameTerm, string type){
+        public async IAsyncEnumerable<RouteBody> GetRoutes(int vendorId, string status)
+        {
+            foreach (DatabaseLayer.Models.Route route in await _routeRepository.GetRoutes(vendorId, status))
+            {
+                yield return new RouteBody()
+                {
+                    Id = route.Id,
+                    Name = route.Name,
+                    VendorId = route.VendorId,
+                    RouteType = route.RouteType,
+                    Status = route.Status
+                };
+            }
+        }
+
+        public async IAsyncEnumerable<RouteBody> GetRoutesByType(string nameTerm, string type)
+        {
             foreach (DatabaseLayer.Models.Route route in await _routeRepository.GetRoutesByType(nameTerm, type))
             {
                 yield return new RouteBody()
                 {
                     Id = route.Id,
                     Name = route.Name,
-                    Distance = route.Distance,
-                    RouteType = route.RouteType.ToString()
+                    VendorId = route.VendorId,
+                    RouteType = route.RouteType.ToString(),
+                    Status = route.Status
                 };
             }
         }

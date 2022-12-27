@@ -13,7 +13,11 @@ var builder = WebApplication.CreateBuilder(args);
 ConfigurationManager configuration = builder.Configuration;
 // Add services to the container.
 
-builder.Services.AddCors(options => options.AddPolicy("general", builder => builder.AllowAnyMethod().AllowAnyOrigin().AllowAnyHeader()));
+builder.Services.AddCors(options => options.AddPolicy("general", builder => builder.WithOrigins(
+    "http://localhost:4200",
+    "https://www.bus-route-management.com",
+    "https://103.30.127.93"
+).AllowAnyMethod().AllowAnyHeader()));
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddAuthentication(CertificateAuthenticationDefaults.AuthenticationScheme).AddCertificate();
@@ -55,6 +59,7 @@ builder.Services.AddTransient(typeof(BusRouteRepository), typeof(BusRouteReposit
 builder.Services.AddTransient(typeof(OilPriceRepository), typeof(OilPriceRepository));
 builder.Services.AddTransient(typeof(PayeeRepository), typeof(PayeeRepository));
 builder.Services.AddTransient(typeof(RoutePriceRepository), typeof(RoutePriceRepository));
+builder.Services.AddTransient(typeof(RouteDistanceRepository), typeof(RouteDistanceRepository));
 builder.Services.AddTransient(typeof(RouteRepository), typeof(RouteRepository));
 builder.Services.AddTransient(typeof(ShiftRepository), typeof(ShiftRepository));
 builder.Services.AddTransient(typeof(UserRepository), typeof(UserRepository));
@@ -68,6 +73,8 @@ builder.Services.AddTransient(typeof(OilPriceService), typeof(OilPriceService));
 builder.Services.AddTransient(typeof(PayeeService), typeof(PayeeService));
 builder.Services.AddTransient(typeof(RoutePriceService), typeof(RoutePriceService));
 builder.Services.AddTransient(typeof(RouteService), typeof(RouteService));
+builder.Services.AddTransient(typeof(RouteDistanceService), typeof(RouteDistanceService));
+builder.Services.AddTransient(typeof(RoutePriceService), typeof(RoutePriceService));
 builder.Services.AddTransient(typeof(ShiftService), typeof(ShiftService));
 builder.Services.AddTransient(typeof(UserService), typeof(UserService));
 builder.Services.AddTransient(typeof(VendorPayeeService), typeof(VendorPayeeService));
@@ -75,6 +82,8 @@ builder.Services.AddTransient(typeof(VendorService), typeof(VendorService));
 builder.Services.AddTransient(typeof(SummaryService), typeof(SummaryService));
 
 builder.Services.AddTransient(typeof(BusRouteDbContext), typeof(BusRouteDbContext));
+
+builder.Services.AddTransient<IHttpContextAccessor, HttpContextAccessor>();
 
 var app = builder.Build();
 

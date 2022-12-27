@@ -1,8 +1,10 @@
 using System.Net;
 using BusRouteApi.DatabaseLayer.Models;
+using BusRouteApi.Helpers;
 using BusRouteApi.RequestModels;
 using BusRouteApi.ServiceLayer;
 using Microsoft.AspNetCore.Mvc;
+
 
 namespace BusRouteApi.ControllerLayer
 {
@@ -11,10 +13,12 @@ namespace BusRouteApi.ControllerLayer
     public class PayeeController : ControllerBase
     {
         private readonly PayeeService _payeeService;
+        private readonly PermissionAuthorize _permissionAuthorize;
 
-        public PayeeController(PayeeService payeeService)
+        public PayeeController(PayeeService payeeService, IHttpContextAccessor httpContext)
         {
             _payeeService = payeeService;
+            _permissionAuthorize = new PermissionAuthorize(httpContext);
         }
 
         [HttpGet("suggestions")]
@@ -23,7 +27,7 @@ namespace BusRouteApi.ControllerLayer
             try
             {
                 Queue<PayeeBody> payeeBodies = new Queue<PayeeBody>();
-                await foreach (PayeeBody payeeBody in _payeeService.GetPayees(query.Term))
+                await foreach (PayeeBody payeeBody in _payeeService.GetPayees(query.Term, _permissionAuthorize._user.VendorId))
                 {
                     payeeBodies.Enqueue(payeeBody);
                 }
@@ -44,7 +48,7 @@ namespace BusRouteApi.ControllerLayer
 
                 Queue<PayeeBody> payeeBodies = new Queue<PayeeBody>();
 
-                await foreach (PayeeBody payeeBody in _payeeService.GetAllPayees())
+                await foreach (PayeeBody payeeBody in _payeeService.GetAllPayees(_permissionAuthorize._user.VendorId))
                 {
                     payeeBodies.Enqueue(payeeBody);
                 }

@@ -4,7 +4,8 @@ namespace BusRouteApi.RequestModels
     {
         public int Id { get; set; }
         public string Name { get; set; }
-        public int Distance { get; set; }
         public string RouteType { get; set; }
+        public string Status { get; set; }
+        public int VendorId { get; set; }
     }
 }

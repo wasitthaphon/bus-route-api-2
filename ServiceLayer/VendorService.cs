@@ -32,7 +32,7 @@ namespace BusRouteApi.ServiceLayer
 
                 if (result == false)
                 {
-                    return (false, new Exception("Could not create vendor"));
+                    return (false, new Exception("Could not create vendor."));
                 }
 
                 return (true, null);
@@ -55,12 +55,40 @@ namespace BusRouteApi.ServiceLayer
 
                 if (vendor == null)
                 {
-                    return (null, new Exception("Vendor does not exist"));
+                    return (null, new Exception("Vendor does not exist."));
                 }
 
                 vendorBody = new VendorBody();
                 vendorBody.Id = vendor.Id;
                 vendorBody.Name = vendor.Name;
+
+                return (vendorBody, null);
+            }
+            catch (Exception e)
+            {
+                return (null, e);
+            }
+        }
+
+        public async Task<(VendorBody, Exception)> GetVender(int id)
+        {
+            try
+            {
+                VendorBody vendorBody;
+                Exception e;
+                Vendor vendor;
+                vendor = await _vendorRepository.GetVendor(id);
+
+                if (vendor == null)
+                {
+                    return (null, new Exception("Vendor not found"));
+                }
+
+                vendorBody = new VendorBody
+                {
+                    Id = vendor.Id,
+                    Name = vendor.Name
+                };
 
                 return (vendorBody, null);
             }
@@ -135,6 +163,18 @@ namespace BusRouteApi.ServiceLayer
             catch (Exception e)
             {
                 return (false, e);
+            }
+        }
+
+        public async IAsyncEnumerable<VendorBody> GetVendors()
+        {
+            foreach (Vendor vendor in await _vendorRepository.GetVendors())
+            {
+                yield return new VendorBody
+                {
+                    Id = vendor.Id,
+                    Name = vendor.Name
+                };
             }
         }
     }

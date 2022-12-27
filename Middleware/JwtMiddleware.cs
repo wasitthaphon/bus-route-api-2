@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using BusRouteApi.Helpers;
+using BusRouteApi.RequestModels;
 using BusRouteApi.ServiceLayer;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -24,14 +25,14 @@ namespace BusRouteApi.JwtMiddleware
 
             if (token != null)
             {
-                attachUserToContext(context, userService, token);
+                await attachUserToContext(context, userService, token);
             }
 
             await _next(context);
         }
 
 
-        private void attachUserToContext(HttpContext context, UserService userService, string token)
+        private async Task attachUserToContext(HttpContext context, UserService userService, string token)
         {
             try
             {
@@ -49,7 +50,12 @@ namespace BusRouteApi.JwtMiddleware
                 var jwtToken = (JwtSecurityToken)validatedToken;
                 var userId = int.Parse(jwtToken.Claims.First(x => x.Type == "Id").Value);
 
-                context.Items["User"] = userService.GetUser(userId);
+                UserBody userBody;
+                Exception e;
+
+                (userBody, e) = await userService.GetUser(userId);
+
+                context.Items["User"] = userBody;
             }
             catch
             {

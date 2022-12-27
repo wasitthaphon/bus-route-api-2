@@ -40,12 +40,15 @@ namespace BusRouteApi.RepositoryLayer
             }
         }
 
-        public async Task<Queue<User>> GetUsers(string term)
+        public async Task<Queue<User>> GetUsers(string term, int vendorId)
         {
             Queue<User> users = new Queue<User>();
 
 
-            foreach (User user in await _context.Users.Where(users => users.Username.ToUpper().Contains(term.Trim().ToUpper())).ToListAsync())
+            foreach (User user in await _context.Users.Where(users =>
+                                    users.Username.ToUpper().Contains(term.Trim().ToUpper())
+                                    && users.VendorId == vendorId
+                                    ).ToListAsync())
             {
                 users.Enqueue(user);
             }
@@ -62,6 +65,18 @@ namespace BusRouteApi.RepositoryLayer
                 users.Enqueue(user);
             }
 
+
+            return users;
+        }
+
+        public async Task<Queue<User>> GetUsers(int vendorId)
+        {
+            Queue<User> users = new Queue<User>();
+
+            foreach (User user in await _context.Users.Where(users => users.VendorId == vendorId).ToListAsync())
+            {
+                users.Enqueue(user);
+            }
 
             return users;
         }

@@ -33,7 +33,7 @@ namespace BusRouteApi.ServiceLayer
                     return (false, new Exception("Username already exist"));
                 }
 
-                user = new User(body.Username, HashPassword(body.Password), body.Name, body.Role);
+                user = new User(body.Username, HashPassword(body.Password), body.Name, body.Role, body.VendorId);
                 result = await _userRepository.CreateUser(user);
 
                 if (result == false)
@@ -77,6 +77,7 @@ namespace BusRouteApi.ServiceLayer
 
                 user.Name = body.Name;
                 user.Role = body.Role;
+                user.VendorId = body.VendorId;
 
                 result = await _userRepository.UpdateUser(user);
 
@@ -143,31 +144,53 @@ namespace BusRouteApi.ServiceLayer
             }
         }
 
-        public async IAsyncEnumerable<UserBody> GetUsers(string term)
+        public async IAsyncEnumerable<UserBody> GetUsers(string term, UserBody requester)
         {
-            foreach (User user in await _userRepository.GetUsers(term))
+            foreach (User user in await _userRepository.GetUsers(term, requester.VendorId))
             {
                 yield return new UserBody
                 {
                     Id = user.Id,
                     Name = user.Name,
                     Role = user.Role.ToString(),
-                    Username = user.Username
+                    Username = user.Username,
+                    VendorId = user.VendorId
                 };
             }
         }
 
-        public async IAsyncEnumerable<UserBody> GetUsers()
+        public async IAsyncEnumerable<UserBody> GetUsers(UserBody requester)
         {
-            foreach (User user in await _userRepository.GetUsers())
+
+            switch (GetRole(requester.Role))
             {
-                yield return new UserBody
-                {
-                    Id = user.Id,
-                    Name = user.Name,
-                    Role = user.Role.ToString(),
-                    Username = user.Username
-                };
+                case Role.Admin:
+
+                    foreach (User user in await _userRepository.GetUsers())
+                    {
+                        yield return new UserBody
+                        {
+                            Id = user.Id,
+                            Name = user.Name,
+                            Role = user.Role.ToString(),
+                            Username = user.Username,
+                            VendorId = user.VendorId
+                        };
+                    }
+                    break;
+                case Role.Clerk:
+                    foreach (User user in await _userRepository.GetUsers(requester.VendorId))
+                    {
+                        yield return new UserBody
+                        {
+                            Id = user.Id,
+                            Name = user.Name,
+                            Role = user.Role.ToString(),
+                            Username = user.Username,
+                            VendorId = user.VendorId
+                        };
+                    }
+                    break;
             }
         }
 
@@ -186,6 +209,7 @@ namespace BusRouteApi.ServiceLayer
             userBody.Name = user.Name;
             userBody.Username = user.Username;
             userBody.Role = user.Role.ToString();
+            userBody.VendorId = user.VendorId;
 
             return (userBody, null);
         }

@@ -1,19 +1,25 @@
 using System.Net;
 using BusRouteApi.DatabaseLayer.Models;
+using BusRouteApi.Helpers;
 using BusRouteApi.RequestModels;
 using BusRouteApi.ServiceLayer;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
+using AuthorizeAttribute = BusRouteApi.Helpers.AuthorizeAttribute;
 
 namespace BusRouteApi.ControllerLayer
 {
+    [Authorize]
     [ApiController]
     [Route("api/buses")]
     public class BusController : ControllerBase
     {
         private readonly BusService _busService;
-        public BusController(BusService busService)
+        private readonly PermissionAuthorize _permissionAuthorize;
+        public BusController(BusService busService, IHttpContextAccessor httpContextAccessor)
         {
             _busService = busService;
+            _permissionAuthorize = new PermissionAuthorize(httpContextAccessor);
         }
 
         [HttpGet("{busNumber}")]
@@ -23,7 +29,7 @@ namespace BusRouteApi.ControllerLayer
             {
                 BusBody bus;
                 Exception exception;
-                (bus, exception) = await _busService.GetBus(busNumber);
+                (bus, exception) = await _busService.GetBus(busNumber, _permissionAuthorize._user.VendorId);
 
                 if (exception != null)
                 {
@@ -47,7 +53,7 @@ namespace BusRouteApi.ControllerLayer
                 Queue<BusBody> buses = new Queue<BusBody>();
 
 
-                await foreach (BusBody bus in _busService.GetBusesByTerm(query.Term))
+                await foreach (BusBody bus in _busService.GetBusesByTerm(query.Term, _permissionAuthorize._user.VendorId))
                 {
                     buses.Enqueue(bus);
                 }
@@ -67,7 +73,7 @@ namespace BusRouteApi.ControllerLayer
             {
                 Queue<BusBody> buses = new Queue<BusBody>();
 
-                await foreach (BusBody bus in _busService.GetAllBuses())
+                await foreach (BusBody bus in _busService.GetAllBuses(_permissionAuthorize._user.VendorId))
                 {
                     buses.Enqueue(bus);
                 }
@@ -87,12 +93,13 @@ namespace BusRouteApi.ControllerLayer
             {
                 bool result;
                 Exception exception;
-                (result, exception) = await _busService.CreateBus(busBody);
+                (result, exception) = await _busService.CreateBus(busBody, _permissionAuthorize._user.VendorId);
 
                 if (exception != null)
                 {
                     return StatusCode((int)HttpStatusCode.BadRequest, new { message = exception.Message });
                 }
+
                 return StatusCode((int)HttpStatusCode.Created);
             }
             catch (Exception e)
@@ -109,7 +116,7 @@ namespace BusRouteApi.ControllerLayer
                 bool result;
                 Exception exception;
 
-                (result, exception) = await _busService.UpdateBus(busBody);
+                (result, exception) = await _busService.UpdateBus(busBody, _permissionAuthorize._user.VendorId);
 
                 if (exception != null)
                 {
@@ -132,7 +139,7 @@ namespace BusRouteApi.ControllerLayer
                 bool result;
                 Exception exception;
 
-                (result, exception) = await _busService.DeleteBus(busNumber);
+                (result, exception) = await _busService.DeleteBus(busNumber, _permissionAuthorize._user.VendorId);
 
                 if (exception != null)
                 {

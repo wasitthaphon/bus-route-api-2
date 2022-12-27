@@ -56,7 +56,7 @@ namespace BusRouteApi.ServiceLayer
                     return (null, e);
                 }
 
-                (busBody, e) = await _busService.GetBus(request.BusNumber);
+                (busBody, e) = await _busService.GetBus(request.BusNumber, request.VendorId);
                 if (e != null)
                 {
                     return (null, e);
@@ -79,7 +79,7 @@ namespace BusRouteApi.ServiceLayer
 
                 foreach (BusRoute busRoute in await _summaryRepository.GetSummaryByBus(busBody, dateFrom, dateTo))
                 {
-                    totalPrice += (busRoute.RoutePrice.Price * busRoute.OilPrice.Price);
+                    totalPrice += (busRoute.RoutePrice * busRoute.OilPrice.Price);
 
                     (dateString, e) = DateTimeParser.DateOnlyToString(busRoute.BusRouteDate);
 
@@ -115,7 +115,7 @@ namespace BusRouteApi.ServiceLayer
                         {
                             if (shiftBodies[i].Id == busRoute.ShiftId)
                             {
-                                routeInShifts[i] = busRoute.RoutePrice.Route.Name;
+                                routeInShifts[i] = busRoute.Route.Name;
                             }
                         }
                     }
@@ -176,21 +176,23 @@ namespace BusRouteApi.ServiceLayer
                 foreach (BusRoute busRoute in await _summaryRepository.GetSummaryByRoute(fromDate, toDate))
                 {
 
-                    if (summaryByRouteResponseDict.ContainsKey(busRoute.RoutePrice.Route.Name))
+                    if (summaryByRouteResponseDict.ContainsKey(busRoute.Route.Name))
                     {
-                        summaryByRouteResponse = summaryByRouteResponseDict[busRoute.RoutePrice.Route.Name];
+                        summaryByRouteResponse = summaryByRouteResponseDict[busRoute.Route.Name];
                         summaryByRouteResponse.LapCount += 1;
-                        summaryByRouteResponse.TotalPrice += (busRoute.RoutePrice.Price * busRoute.OilPrice.Price);
+                        summaryByRouteResponse.NMBPrice += (380 + (busRoute.OilPrice.Price / 2.85 * busRoute.RouteDistance) + (busRoute.RouteDistance * 3.25));
+                        summaryByRouteResponse.TotalPrice += (busRoute.RoutePrice * busRoute.OilPrice.Price);
                     }
                     else
                     {
                         summaryByRouteResponse = new SummaryByRouteResponse();
-                        summaryByRouteResponse.RouteName = busRoute.RoutePrice.Route.Name;
+                        summaryByRouteResponse.RouteName = busRoute.Route.Name;
                         summaryByRouteResponse.LapCount = 1;
-                        summaryByRouteResponse.TotalPrice = (busRoute.RoutePrice.Price * busRoute.OilPrice.Price);
+                        summaryByRouteResponse.NMBPrice = (380 + (busRoute.OilPrice.Price / 2.85 * busRoute.RouteDistance) + (busRoute.RouteDistance * 3.25));
+                        summaryByRouteResponse.TotalPrice = (busRoute.RoutePrice * busRoute.OilPrice.Price);
                     }
 
-                    summaryByRouteResponseDict[busRoute.RoutePrice.Route.Name] = summaryByRouteResponse;
+                    summaryByRouteResponseDict[busRoute.Route.Name] = summaryByRouteResponse;
                 }
 
                 foreach (KeyValuePair<string, SummaryByRouteResponse> summaryData in summaryByRouteResponseDict)
@@ -233,7 +235,7 @@ namespace BusRouteApi.ServiceLayer
 
 
 
-                foreach (BusRoute busRoute in await _summaryRepository.GetSummaryByPayee(dateFrom, dateTo))
+                foreach (BusRoute busRoute in await _summaryRepository.GetSummaryByPayee(dateFrom, dateTo, request.VendorId))
                 {
                     if (summaryByPayeeResponsesDict.ContainsKey(busRoute.Bus.Payee.Name))
                     {
@@ -244,8 +246,8 @@ namespace BusRouteApi.ServiceLayer
                         summaryByPayeeResponse = new SummaryByPayeeResponse();
                         summaryByPayeeResponse.PayeeName = busRoute.Bus.Payee.Name;
                     }
-                    summaryByPayeeResponse.NMBPrice += (380 + (busRoute.OilPrice.Price / 2.85 * busRoute.RoutePrice.Route.Distance) + (busRoute.RoutePrice.Route.Distance * 3.25));
-                    summaryByPayeeResponse.PayeeTotalPrice += (busRoute.RoutePrice.Price);
+                    summaryByPayeeResponse.NMBPrice += (380 + (busRoute.OilPrice.Price / 2.85 * busRoute.RouteDistance) + (busRoute.RouteDistance * 3.25));
+                    summaryByPayeeResponse.PayeeTotalPrice += (busRoute.RoutePrice);
                     summaryByPayeeResponse.TotalReceived = summaryByPayeeResponse.NMBPrice - summaryByPayeeResponse.PayeeTotalPrice;
                     summaryByPayeeResponsesDict[busRoute.Bus.Payee.Name] = summaryByPayeeResponse;
                 }

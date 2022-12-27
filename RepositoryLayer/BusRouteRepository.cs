@@ -28,13 +28,15 @@ namespace BusRouteApi.RepositoryLayer
             return true;
         }
 
-        public async Task<bool> CreateBusRoutes(DateOnly busRouteDate, List<BusRoute> busRoutes)
+        public async Task<bool> CreateBusRoutes(DateOnly busRouteDate, int vendorId, List<BusRoute> busRoutes)
         {
             try
             {
                 Queue<BusRoute> busRoutesOld = new Queue<BusRoute>();
 
-                foreach (BusRoute busRoute in await _context.BusRoutes.Where(busRoutes => busRoutes.BusRouteDate == busRouteDate).ToListAsync())
+                foreach (BusRoute busRoute in await _context.BusRoutes.Where(busRoutes =>
+                                        busRoutes.BusRouteDate == busRouteDate &&
+                                        busRoutes.VendorId == vendorId).ToListAsync())
                 {
                     busRoutesOld.Enqueue(busRoute);
                 }
@@ -80,20 +82,30 @@ namespace BusRouteApi.RepositoryLayer
             }
         }
 
-        public async Task<Queue<BusRoute>> GetBusRoutes(DateOnly busRouteDate)
+        public async Task<Queue<BusRoute>> GetBusRoutes(DateOnly busRouteDate, int vendorId)
         {
             Queue<BusRoute> busRoutes = new Queue<BusRoute>();
 
             foreach (BusRoute busRoute in await _context.BusRoutes.
-                                    Include(busRoutes => busRoutes.RoutePrice.Route).
+                                    Include(busRoutes => busRoutes.Route).
                                     Include(busRoutes => busRoutes.Bus).
                                     Include(busRoutes => busRoutes.Shift).
-            Where(busRoutes => busRoutes.BusRouteDate == busRouteDate).ToListAsync())
+            Where(busRoutes => busRoutes.BusRouteDate == busRouteDate &&
+                              busRoutes.VendorId == vendorId)
+            .OrderBy(busRoutes => busRoutes.Route.Name)
+            .ToListAsync())
             {
                 busRoutes.Enqueue(busRoute);
             }
 
             return busRoutes;
+        }
+
+        public async Task<BusRoute> GetLatestDate(int vendorId)
+        {
+            BusRoute busRoute = await _context.BusRoutes.Where(busRoute => busRoute.VendorId == vendorId).OrderByDescending(busRoute => busRoute.BusRouteDate).FirstAsync();
+
+            return busRoute;
         }
 
         public async Task<bool> UpdateBusRoute(BusRoute busRoute)

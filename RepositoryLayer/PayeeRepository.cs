@@ -29,20 +29,20 @@ namespace BusRouteApi.RepositoryLayer
             return true;
         }
 
-        public async Task<Queue<Payee>> GetPayees(string term)
+        public async Task<Queue<Payee>> GetPayees(string term, int vendorId)
         {
             Queue<Payee> payees = new Queue<Payee>();
 
             if (term.Trim().Length > 0)
             {
-                foreach (Payee payee in await _context.Payees.Where(payee => payee.Name.ToUpper().Contains(term.ToUpper())).ToListAsync())
+                foreach (Payee payee in await _context.Payees.Where(payee => payee.Name.ToUpper().Contains(term.ToUpper()) && payee.VendorId == vendorId).ToListAsync())
                 {
                     payees.Enqueue(payee);
                 }
             }
             else
             {
-                foreach (Payee payee in await _context.Payees.Where(payees => true).ToListAsync())
+                foreach (Payee payee in await _context.Payees.Where(payees => payees.VendorId == vendorId).ToListAsync())
                 {
                     payees.Enqueue(payee);
                 }
@@ -80,12 +80,23 @@ namespace BusRouteApi.RepositoryLayer
 
             return payees;
         }
-        public async Task<Payee> GetPayee(string payeeName)
+
+        public async Task<Queue<Payee>> GetAllPayees(int vendorId)
+        {
+            Queue<Payee> payees = new Queue<Payee>();
+            foreach (Payee payee in await _context.Payees.Where(payees => payees.VendorId == vendorId).ToListAsync())
+            {
+                payees.Enqueue(payee);
+            }
+            return payees;
+        }
+
+        public async Task<Payee> GetPayee(string payeeName, int vendorId)
         {
             const int COMPARE_MATCH = 0;
             try
             {
-                Payee payee = await _context.Payees.FirstOrDefaultAsync(payee => string.Compare(payee.Name, payeeName) == COMPARE_MATCH);
+                Payee payee = await _context.Payees.FirstOrDefaultAsync(payee => string.Compare(payee.Name, payeeName) == COMPARE_MATCH && payee.VendorId == vendorId);
 
                 return payee;
             }

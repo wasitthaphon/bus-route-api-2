@@ -41,11 +41,15 @@ namespace BusRouteApi.RepositoryLayer
             }
         }
 
-        public async Task<Queue<Bus>> GetBusesByTerm(string term)
+        public async Task<Queue<Bus>> GetBusesByTerm(string term, int vendorId)
         {
             Queue<Bus> buses = new Queue<Bus>();
 
-            foreach (Bus bus in await _context.Buses.Include(buses => buses.Payee).Where(bus => bus.BusNumber.ToUpper().Contains(term.ToUpper())).ToListAsync())
+            foreach (Bus bus in await
+                            _context.Buses.Include(buses => buses.Payee).
+                            Where(
+                                bus => bus.BusNumber.ToUpper().Contains(term.ToUpper()) &&
+                                bus.VendorId == vendorId).ToListAsync())
             {
                 buses.Enqueue(bus);
             }
@@ -57,7 +61,7 @@ namespace BusRouteApi.RepositoryLayer
         {
             Queue<Bus> buses = new Queue<Bus>();
 
-            foreach (Bus bus in await _context.Buses.Include(buses => buses.Payee).Where(buses => true).ToListAsync())
+            foreach (Bus bus in await _context.Buses.ToListAsync())
             {
                 buses.Enqueue(bus);
             }
@@ -65,7 +69,22 @@ namespace BusRouteApi.RepositoryLayer
             return buses;
         }
 
-        public async Task<Bus> GetBus(string busNumber)
+        public async Task<Queue<Bus>> GetAllBuses(int vendorId)
+        {
+            Queue<Bus> buses = new Queue<Bus>();
+
+            foreach (Bus bus in await _context.Buses
+                                    .Include(buses => buses.Payee)
+                                    .Where(buses => buses.VendorId == vendorId)
+                                    .ToListAsync())
+            {
+                buses.Enqueue(bus);
+            }
+
+            return buses;
+        }
+
+        public async Task<Bus> GetBus(string busNumber, int vendorId)
         {
             const int COMPARE_MATCH = 0;
 
@@ -73,7 +92,9 @@ namespace BusRouteApi.RepositoryLayer
             {
                 Bus bus = await _context.Buses
                 .Include(bus => bus.Payee)
-                .FirstOrDefaultAsync(bus => string.Compare(bus.BusNumber, busNumber) == COMPARE_MATCH);
+                .FirstOrDefaultAsync(bus =>
+                                    string.Compare(bus.BusNumber.ToUpper(), busNumber.ToUpper()) == COMPARE_MATCH &&
+                                    bus.VendorId == vendorId);
 
                 return bus;
             }

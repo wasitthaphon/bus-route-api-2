@@ -6,6 +6,7 @@ namespace BusRouteApi.RequestModels
     {
         public int Id { get; set; }
         public string Name { get; set; }
+        public int VendorId { get; set; }
 
         public PayeeBody() { }
 
@@ -13,6 +14,7 @@ namespace BusRouteApi.RequestModels
         {
             Id = payee.Id;
             Name = payee.Name;
+            VendorId = payee.VendorId;
         }
     }
 }

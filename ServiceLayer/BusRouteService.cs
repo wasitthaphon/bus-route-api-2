@@ -17,9 +17,10 @@ namespace BusRouteApi.ServiceLayer
         private readonly BusRouteRepository _busRouteRepository;
         private readonly VendorRepository _vendorRepository;
         private readonly RoutePriceRepository _routePriceRepository;
+        private readonly RouteDistanceRepository _routeDistanceRepository;
         public BusRouteService(BusRouteRepository busRouteRepository, RouteRepository routeRepository,
         OilPriceRepository oilPriceRepository, RoutePriceRepository routePriceRepository,
-        VendorRepository vendorRepository,
+        VendorRepository vendorRepository, RouteDistanceRepository routeDistanceRepository,
         BusRepository busRepository, ShiftRepository shiftRepository)
         {
             _busRouteRepository = busRouteRepository;
@@ -29,10 +30,61 @@ namespace BusRouteApi.ServiceLayer
             _shiftRepository = shiftRepository;
             _routePriceRepository = routePriceRepository;
             _vendorRepository = vendorRepository;
+            _routeDistanceRepository = routeDistanceRepository;
+        }
+
+        public async Task<(bool, Exception)> CreateBusRouteCopyFromDate(BusRouteCopyFromDateRequest body, int vendorId)
+        {
+            DateOnly copyFromDate;
+            DateOnly copyToDate;
+            string copyToDateString;
+            bool result;
+            Exception e;
+            BusRouteBody busRouteBody;
+
+            try
+            {
+
+                (copyFromDate, e) = DateTimeParser.ParserDateFromString(body.FromDate);
+
+                if (e != null)
+                {
+                    return (false, e);
+                }
+
+                (copyToDate, e) = DateTimeParser.ParserDateFromString(body.ToDate);
+                if (e != null)
+                {
+                    return (false, e);
+                }
+
+                (busRouteBody, e) = await GetBusRoutes(copyFromDate, vendorId);
+                if (e != null)
+                {
+                    return (false, e);
+                }
+
+                (copyToDateString, e) = DateTimeParser.DateOnlyToString(copyToDate);
+                busRouteBody.BusRouteDate = copyToDateString;
+
+                (result, e) = await CreateBusRoute(busRouteBody, vendorId);
+                if (e != null)
+                {
+                    return (false, e);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                return (false, ex);
+            }
+
+
+            return (true, null);
         }
 
         // create bus route
-        public async Task<(bool, Exception)> CreateBusRoute(BusRouteBody body)
+        public async Task<(bool, Exception)> CreateBusRoute(BusRouteBody body, int vendorId)
         {
             // validate all input
             List<BusOnRouteShiftModel> busOnRouteShiftModels = new List<BusOnRouteShiftModel>();
@@ -48,8 +100,11 @@ namespace BusRouteApi.ServiceLayer
             BusShiftModel busShiftModel;
             OilPrice oilPrice;
             BusRoute busRoute;
-            RoutePrice routePrice;
-            Vendor vendor;
+            RoutePrice mRoutePrice;
+            RouteDistance mRouteDistance;
+            double routePrice;
+            int routeDistance;
+            int oilPriceReference;
             DateOnly oilPriceDate;
             Exception e;
 
@@ -57,18 +112,17 @@ namespace BusRouteApi.ServiceLayer
 
             bool result;
 
-            oilPrice = await _oilPriceRepository.GetOilPrice(oilPriceDate);
+            oilPrice = await _oilPriceRepository.GetOilPrice(oilPriceDate, vendorId);
             if (oilPrice == null)
             {
-                oilPrice = new OilPrice(oilPriceDate, 0);
+                oilPrice = new OilPrice(oilPriceDate, 0, vendorId);
                 await _oilPriceRepository.CreateOilPrice(oilPrice);
             }
-            oilPrice = await _oilPriceRepository.GetOilPrice(oilPriceDate);
+            oilPrice = await _oilPriceRepository.GetOilPrice(oilPriceDate, vendorId);
 
-            vendor = await _vendorRepository.GetDefaultVendor();
+            oilPriceReference = (int)Math.Floor(oilPrice.Price);
 
-
-            (result, e) = await DeleteBusRoute(oilPriceDate);
+            (result, e) = await DeleteBusRoute(oilPriceDate, vendorId);
 
             if (body.details.Length == 0)
             {
@@ -89,23 +143,28 @@ namespace BusRouteApi.ServiceLayer
 
                 for (int j = 0; j < body.details[i].BusOnShifts.Length; j++)
                 {
-                    shift = await _shiftRepository.GetShift(body.details[i].BusOnShifts[j].Shift);
-                    bus = await _busRepository.GetBus(body.details[i].BusOnShifts[j].BusNumber);
 
-                    if (shift == null)
+                    if (!string.IsNullOrEmpty(body.details[i].BusOnShifts[j].Shift) &&
+                        !string.IsNullOrEmpty(body.details[i].BusOnShifts[j].BusNumber))
                     {
-                        return (false, new Exception("Shift not found"));
-                    }
+                        shift = await _shiftRepository.GetShift(body.details[i].BusOnShifts[j].Shift);
+                        bus = await _busRepository.GetBus(body.details[i].BusOnShifts[j].BusNumber, vendorId);
 
-                    if (bus != null)
-                    {
-                        busShiftModel = new BusShiftModel()
+                        if (shift == null)
                         {
-                            Bus = bus,
-                            Shift = shift
-                        };
+                            return (false, new Exception("Shift not found"));
+                        }
 
-                        busShiftModels.Add(busShiftModel);
+                        if (bus != null)
+                        {
+                            busShiftModel = new BusShiftModel()
+                            {
+                                Bus = bus,
+                                Shift = shift
+                            };
+
+                            busShiftModels.Add(busShiftModel);
+                        }
                     }
                 }
 
@@ -127,20 +186,46 @@ namespace BusRouteApi.ServiceLayer
             for (int i = 0; i < busOnRouteShiftModels.Count; i++)
             {
 
-                routePrice = await _routePriceRepository.GetInBoundRoutePrice(busOnRouteShiftModels[i].Route.Id, oilPriceDate);
+                mRoutePrice = await _routePriceRepository.GetRoutePrice(busOnRouteShiftModels[i].Route.Id, oilPriceReference);
+                mRouteDistance = await _routeDistanceRepository.GetRouteDistanceLatest(busOnRouteShiftModels[i].Route.Id, oilPriceDate);
+
+                if (mRoutePrice == null)
+                {
+                    routePrice = 0;
+                }
+                else
+                {
+                    routePrice = mRoutePrice.Price;
+                }
+
+                if (mRouteDistance == null)
+                {
+                    routeDistance = 0;
+                }
+                else
+                {
+                    routeDistance = mRouteDistance.Distance;
+                }
 
                 for (int j = 0; j < busOnRouteShiftModels[i].busRoutes.Count; j++)
                 {
                     busShiftModel = busOnRouteShiftModels[i].busRoutes[j];
 
-                    busRoute = new BusRoute(oilPriceDate, busShiftModel.Bus.Id, busShiftModel.Shift.Id, routePrice.Id, oilPrice.Id, vendor.Id);
+                    busRoute = new BusRoute(oilPriceDate,
+                                            busShiftModel.Bus.Id,
+                                            busShiftModel.Shift.Id,
+                                            busOnRouteShiftModels[i].Route.Id,
+                                            oilPrice.Id,
+                                            vendorId,
+                                            routePrice,
+                                            routeDistance);
                     busRoutes.Add(busRoute);
                 }
             }
 
-            if (busOnRouteShiftModels.Count > 0)
+            if (busRoutes.Count > 0)
             {
-                result = await _busRouteRepository.CreateBusRoutes(oilPriceDate, busRoutes);
+                result = await _busRouteRepository.CreateBusRoutes(oilPriceDate, vendorId, busRoutes);
 
                 if (result == false)
                 {
@@ -156,14 +241,14 @@ namespace BusRouteApi.ServiceLayer
         }
 
         // delete bus route
-        public async Task<(bool, Exception)> DeleteBusRoute(DateOnly busRouteDate)
+        public async Task<(bool, Exception)> DeleteBusRoute(DateOnly busRouteDate, int vendorId)
         {
             try
             {
                 bool result = false;
                 Queue<BusRoute> busRoutes = new Queue<BusRoute>();
 
-                busRoutes = await _busRouteRepository.GetBusRoutes(busRouteDate);
+                busRoutes = await _busRouteRepository.GetBusRoutes(busRouteDate, vendorId);
 
                 if (busRoutes.Count > 0)
                 {
@@ -186,7 +271,7 @@ namespace BusRouteApi.ServiceLayer
         }
 
         // get bus route by date
-        public async Task<(BusRouteBody, Exception)> GetBusRoutes(DateOnly busRouteDate)
+        public async Task<(BusRouteBody, Exception)> GetBusRoutes(DateOnly busRouteDate, int vendorId)
         {
             try
             {
@@ -217,16 +302,16 @@ namespace BusRouteApi.ServiceLayer
                 List<BusRouteDetailBody> busRouteDetailBodies = new List<BusRouteDetailBody>();
                 BusRouteDetailBody busRouteDetailBody;
 
-                OilPrice oilPrice = await _oilPriceRepository.GetOilPrice(busRouteDate);
+                OilPrice oilPrice = await _oilPriceRepository.GetOilPrice(busRouteDate, vendorId);
 
                 if (oilPrice == null)
                 {
-                    oilPrice = new OilPrice(busRouteDate, 0);
+                    oilPrice = new OilPrice(busRouteDate, 0, vendorId);
                     await _oilPriceRepository.CreateOilPrice(oilPrice);
                 }
 
                 // Create bus route header bodies
-                routes = await _routeRepository.GetAllRoutes();
+                routes = await _routeRepository.GetAllRoutes(vendorId, "Active");
                 shifts = await _shiftRepository.GetAllShifts();
 
                 foreach (DatabaseLayer.Models.Route route1 in routes)
@@ -235,8 +320,9 @@ namespace BusRouteApi.ServiceLayer
                     {
                         Id = route1.Id,
                         Name = route1.Name,
-                        Distance = route1.Distance,
-                        RouteType = route1.RouteType
+                        RouteType = route1.RouteType,
+                        Status = route1.Status,
+                        VendorId = route1.VendorId
                     };
 
                     routeBodies.Add(routeBody);
@@ -260,12 +346,12 @@ namespace BusRouteApi.ServiceLayer
                 busRouteBody.headers = busRouteHeaderBody;
 
                 // Create bus route details.
-                busRoutes = await _busRouteRepository.GetBusRoutes(busRouteDate);
+                busRoutes = await _busRouteRepository.GetBusRoutes(busRouteDate, vendorId);
 
                 foreach (BusRoute busRoute in busRoutes)
                 {
 
-                    route = busRoute.RoutePrice.Route;
+                    route = busRoute.Route;
 
                     if (route == null)
                     {
@@ -347,6 +433,37 @@ namespace BusRouteApi.ServiceLayer
             catch (Exception e)
             {
                 return (null, e);
+            }
+        }
+
+        public async Task<(string, Exception)> GetLatestExistDate(int vendorId)
+        {
+            try
+            {
+
+                string latestDate = string.Empty;
+                BusRoute busRoute;
+                Exception e;
+
+                busRoute = await _busRouteRepository.GetLatestDate(vendorId);
+
+                if (busRoute == null)
+                {
+                    return (latestDate, new Exception("No any data exists"));
+                }
+
+                (latestDate, e) = DateTimeParser.DateOnlyToString(busRoute.BusRouteDate);
+
+                if (e != null)
+                {
+                    return (latestDate, e);
+                }
+
+                return (latestDate, null);
+            }
+            catch (Exception e)
+            {
+                return (string.Empty, e);
             }
         }
 
