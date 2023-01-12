@@ -82,6 +82,25 @@ namespace BusRouteApi.RepositoryLayer
             }
         }
 
+        public async Task<Queue<BusRoute>> GetBusRoutes(int routeId, DateOnly dateFrom, DateOnly dateTo)
+        {
+            Queue<BusRoute> busRoutes = new Queue<BusRoute>();
+
+            foreach (BusRoute busRoute in await _context.BusRoutes.
+                                                Include(busRoutes => busRoutes.Route).
+                                                Include(busRoutes => busRoutes.Bus).
+                                                Include(busRoutes => busRoutes.Shift).
+                                        Where(busRoutes => busRoutes.RouteId == routeId &&
+                                        busRoutes.BusRouteDate >= dateFrom && busRoutes.BusRouteDate <= dateTo)
+                                        .OrderBy(busRoutes => busRoutes.BusRouteDate)
+                                        .ToListAsync())
+            {
+                busRoutes.Enqueue(busRoute);
+            }
+
+            return busRoutes;
+        }
+
         public async Task<Queue<BusRoute>> GetBusRoutes(DateOnly busRouteDate, int vendorId)
         {
             Queue<BusRoute> busRoutes = new Queue<BusRoute>();

@@ -54,6 +54,43 @@ namespace BusRouteApi.ControllerLayer
             }
         }
 
+        [HttpGet("route/{id}")]
+        public async Task<IActionResult> GetBusRouteByRoute([FromQuery] BusRouteRequest request)
+        {
+            try
+            {
+                BusRouteBodyByRoute[] busRouteBodyByRoutes;
+                Exception ex;
+                bool isSameVendor;
+
+                (isSameVendor, ex) = await _permissionAuthorize.IsSameVendor(request.VendorId);
+
+                if (ex != null)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, new { message = ex.Message });
+                }
+
+                if (!isSameVendor)
+                {
+                    return StatusCode((int)HttpStatusCode.Unauthorized, new { message = "Unauthorized" });
+                }
+
+                (busRouteBodyByRoutes, ex) = await _busRouteService.GetBusesOnRoute(request);
+
+                if (ex != null)
+                {
+                    return StatusCode((int)HttpStatusCode.BadRequest, new { message = ex.Message });
+                }
+
+                return StatusCode((int)HttpStatusCode.OK, busRouteBodyByRoutes);
+
+            }
+            catch (Exception e)
+            {
+                return StatusCode((int)HttpStatusCode.InternalServerError, new { message = e.Message });
+            }
+        }
+
         [HttpGet("latest-date")]
         public async Task<IActionResult> GetLatestDate()
         {

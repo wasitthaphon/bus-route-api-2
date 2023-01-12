@@ -151,7 +151,7 @@ namespace BusRouteApi.ServiceLayer
 
             try
             {
-                Dictionary<string, SummaryByRouteResponse> summaryByRouteResponseDict = new Dictionary<string, SummaryByRouteResponse>();
+                Dictionary<int, SummaryByRouteResponse> summaryByRouteResponseDict = new Dictionary<int, SummaryByRouteResponse>();
                 List<SummaryByRouteResponse> summaryByRouteResponses = new List<SummaryByRouteResponse>();
                 SummaryByRouteResponse summaryByRouteResponse;
                 DateOnly fromDate;
@@ -176,9 +176,9 @@ namespace BusRouteApi.ServiceLayer
                 foreach (BusRoute busRoute in await _summaryRepository.GetSummaryByRoute(fromDate, toDate))
                 {
 
-                    if (summaryByRouteResponseDict.ContainsKey(busRoute.Route.Name))
+                    if (summaryByRouteResponseDict.ContainsKey(busRoute.Route.Id))
                     {
-                        summaryByRouteResponse = summaryByRouteResponseDict[busRoute.Route.Name];
+                        summaryByRouteResponse = summaryByRouteResponseDict[busRoute.Route.Id];
                         summaryByRouteResponse.LapCount += 1;
                         summaryByRouteResponse.NMBPrice += (380 + (busRoute.OilPrice.Price / 2.85 * busRoute.RouteDistance) + (busRoute.RouteDistance * 3.25));
                         summaryByRouteResponse.TotalPrice += (busRoute.RoutePrice * busRoute.OilPrice.Price);
@@ -192,10 +192,10 @@ namespace BusRouteApi.ServiceLayer
                         summaryByRouteResponse.TotalPrice = (busRoute.RoutePrice * busRoute.OilPrice.Price);
                     }
 
-                    summaryByRouteResponseDict[busRoute.Route.Name] = summaryByRouteResponse;
+                    summaryByRouteResponseDict[busRoute.Route.Id] = summaryByRouteResponse;
                 }
 
-                foreach (KeyValuePair<string, SummaryByRouteResponse> summaryData in summaryByRouteResponseDict)
+                foreach (KeyValuePair<int, SummaryByRouteResponse> summaryData in summaryByRouteResponseDict)
                 {
                     summaryByRouteResponses.Add(summaryData.Value);
                 }

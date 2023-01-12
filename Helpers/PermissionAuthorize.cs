@@ -16,6 +16,23 @@ namespace BusRouteApi.Helpers
             _user = (UserBody)_httpContextAccessor.HttpContext.Items["User"];
         }
 
+        public async Task<(bool, Exception)> IsSameVendor(int vendorId)
+        {
+            try
+            {
+                if (_user.VendorId != vendorId)
+                {
+                    return (false, new Exception("Unauthorized"));
+                }
+
+                return (true, null);
+            }
+            catch (Exception e)
+            {
+                return (false, e);
+            }
+        }
+
         public async Task<(bool, Exception)> IsOwner(int userId)
         {
             try

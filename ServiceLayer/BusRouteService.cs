@@ -467,5 +467,99 @@ namespace BusRouteApi.ServiceLayer
             }
         }
 
+        public async Task<(BusRouteBodyByRoute[], Exception)> GetBusesOnRoute(BusRouteRequest request)
+        {
+            DatabaseLayer.Models.Route route;
+            Queue<Shift> shifts = new Queue<Shift>();
+            Queue<BusRoute> busRoutes = new Queue<BusRoute>();
+
+            List<ShiftBody> shiftBodies = new List<ShiftBody>();
+            ShiftBody shiftBody;
+
+            List<BusRouteBodyByRoute> busRouteBodyByDates = new List<BusRouteBodyByRoute>();
+            BusRouteBodyByRoute busRouteBodyByDate;
+
+            List<BusOnShift> busOnShifts = new List<BusOnShift>();
+            BusOnShift busOnShift;
+            bool isFirst = true;
+
+            DateOnly dateFrom;
+            DateOnly dateTo;
+            DateOnly tempBusRouteDate;
+            string tempBusRouteDateString = string.Empty;
+            Exception ex;
+
+            (dateFrom, ex) = DateTimeParser.ParserDateFromString(request.DateFrom);
+
+            if (ex != null)
+            {
+                throw ex;
+            }
+
+            (dateTo, ex) = DateTimeParser.ParserDateFromString(request.DateTo);
+            if (ex != null)
+            {
+                throw ex;
+            }
+
+            // Create bus route header bodies
+            route = await _routeRepository.GetRoute(request.RouteId);
+            shifts = await _shiftRepository.GetAllShifts();
+
+
+            busRoutes = await _busRouteRepository.GetBusRoutes(request.RouteId, dateFrom, dateTo);
+
+
+            busRouteBodyByDate = new BusRouteBodyByRoute();
+            foreach (BusRoute busRoute in busRoutes)
+            {
+                if (tempBusRouteDate != busRoute.BusRouteDate)
+                {
+                    busRouteBodyByDate = new BusRouteBodyByRoute();
+                    (tempBusRouteDateString, ex) = DateTimeParser.DateOnlyToString(busRoute.BusRouteDate);
+                    busOnShifts = new List<BusOnShift>();
+
+                    foreach (Shift shift in shifts)
+                    {
+                        busOnShift = new BusOnShift();
+                        busOnShift.Shift = shift.Name;
+                        busOnShift.BusNumber = string.Empty;
+
+                        if (shift.Name == busRoute.Route.Name)
+                        {
+                            busOnShift.BusNumber = busRoute.Bus.BusNumber;
+                        }
+
+                        busOnShifts.Add(busOnShift);
+                    }
+
+                    busRouteBodyByDate.BusRouteDate = tempBusRouteDateString;
+                    busRouteBodyByDate.Route = busRoute.Route.Name;
+                    busRouteBodyByDate.BusOnShifts = busOnShifts.ToArray();
+
+                    tempBusRouteDate = busRoute.BusRouteDate;
+
+                    if (!isFirst)
+                    {
+                        busRouteBodyByDates.Add(busRouteBodyByDate);
+                    }
+
+                    isFirst = false;
+                }
+                else
+                {
+
+                    for (int i = 0; i < busRouteBodyByDate.BusOnShifts.Length; i++)
+                    {
+                        if (busRouteBodyByDate.BusOnShifts[i].Shift == busRoute.Shift.Name)
+                        {
+                            busRouteBodyByDate.BusOnShifts[i].BusNumber = busRoute.Bus.BusNumber;
+                        }
+                    }
+                }
+            }
+
+            return (busRouteBodyByDates.ToArray(), null);
+        }
     }
 }

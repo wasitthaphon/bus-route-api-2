@@ -122,8 +122,8 @@ namespace BusRouteApi.ControllerLayer
                 bool isOwner;
                 bool isAdmin;
 
-                (isOwner, e) = await _permisssionAuthorize.IsOwner(id);
-                (isAdmin, e) = await _permisssionAuthorize.IsRolePermit(new List<string> { Role.Admin.ToString() });
+                (isOwner, e) = await _permisssionAuthorize.IsSameVendor(id);
+                (isAdmin, e) = await _permisssionAuthorize.IsRolePermit(new List<string> { Role.Admin.ToString(), Role.Clerk.ToString() });
 
                 if (!isOwner && !isAdmin)
                 {
